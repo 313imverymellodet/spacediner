@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Space Diner — run a burger joint on the Moon</title>
+  <meta name="description" content="Grill, serve and expand your diner across the solar system. A cozy idle arcade game — free in your browser.">
+  <meta name="theme-color" content="#10163a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Space Diner — run a burger joint on the Moon">
+  <meta property="og:description" content="Grill, serve, expand — then launch your diner to Mars. Free, no download.">
+  <meta property="og:image" content="__SITE_URL__/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="__SITE_URL__/og.png">
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #10163a; touch-action: none; overscroll-behavior: none;
+      -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #fff; }
+    #unity-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; background: #10163a; outline: none; }
+    #loader { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5;
+      background: radial-gradient(circle at 50% 40%, #2a3470 0%, #10163a 65%); transition: opacity .5s; }
+    #loader.done { opacity: 0; pointer-events: none; }
+    .moon { width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #e8ebf2, #9aa0b0 70%);
+      box-shadow: 0 0 60px rgba(180,190,255,.35); position: relative; animation: bob 2s ease-in-out infinite; }
+    .moon::before, .moon::after { content: ""; position: absolute; border-radius: 50%; background: rgba(120,126,145,.55); }
+    .moon::before { width: 26px; height: 26px; left: 26px; top: 58px; } .moon::after { width: 16px; height: 16px; left: 70px; top: 30px; }
+    .burger { position: absolute; left: 50%; top: -34px; transform: translateX(-50%); font-size: 44px; animation: spin 3s linear infinite; }
+    @keyframes bob { 50% { transform: translateY(-8px); } }
+    @keyframes spin { to { transform: translateX(-50%) rotate(360deg); } }
+    h1 { margin: 34px 0 4px; font-size: 44px; font-weight: 900; letter-spacing: 2px; text-shadow: 0 4px 0 #ff9a3c; }
+    .tag { opacity: .7; font-weight: 700; letter-spacing: 2px; font-size: 13px; }
+    .bar { width: 240px; height: 10px; border-radius: 10px; background: rgba(255,255,255,.14); margin-top: 28px; overflow: hidden; }
+    .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ffc93c, #ff9a3c); transition: width .2s; border-radius: 10px; }
+    #err { display: none; max-width: 320px; text-align: center; margin-top: 18px; font-size: 14px; opacity: .85; }
+  </style>
+</head>
+<body>
+  <canvas id="unity-canvas" tabindex="-1"></canvas>
+  <div id="loader">
+    <div class="moon"><div class="burger">🍔</div></div>
+    <h1>SPACE DINER</h1>
+    <div class="tag">GRILL · SERVE · EXPAND · LAUNCH</div>
+    <div class="bar"><i id="fill"></i></div>
+    <div id="err"></div>
+  </div>
+  <script>
+    // ---- Portal adapter: Poki / CrazyGames if present, otherwise a dev fallback that just grants rewards.
+    (function () {
+      var poki = function () { return window.PokiSDK; };
+      var crazy = function () { return window.CrazyGames && window.CrazyGames.SDK; };
+      window.SD = {
+        adsAvailable: function () { return !!(poki() || crazy()); },   // rewarded ads only where a portal SDK exists
+        rewarded: function () {
+          if (poki()) return poki().rewardedBreak().then(function (ok) { return !!ok; });
+          if (crazy()) return new Promise(function (res) {
+            crazy().ad.requestAd("rewarded", { adFinished: function () { res(true); }, adError: function () { res(false); } });
+          });
+          return new Promise(function (res) { setTimeout(function () { res(true); }, 400); }); // dev: instant reward
+        },
+        gameplay: function (on) {
+          try { if (poki()) on ? poki().gameplayStart() : poki().gameplayStop(); } catch (e) {}
+          try { if (crazy()) on ? crazy().game.gameplayStart() : crazy().game.gameplayStop(); } catch (e) {}
+        },
+        ready: function () {
+          try { if (poki()) poki().gameLoadingFinished(); } catch (e) {}
+          try { if (crazy()) crazy().game.loadingStop(); } catch (e) {}
+        },
+        track: function (name, value) {
+          try { window.va && window.va("event", { name: name, data: { value: value } }); } catch (e) {}
+        }
+      };
+      window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+      ["gesturestart", "gesturechange", "contextmenu", "dblclick"].forEach(function (ev) {
+        document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
+      });
+      document.addEventListener("touchmove", function (e) { e.preventDefault(); }, { passive: false });
+    })();
+
+    (function () {
+      var canvas = document.getElementById("unity-canvas"), loader = document.getElementById("loader");
+      var fill = document.getElementById("fill"), err = document.getElementById("err");
+      var buildUrl = "Build";
+      var config = {
+        dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+        frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_THREADS
+        workerUrl: buildUrl + "/{{{ WORKER_FILENAME }}}",
+#endif
+#if USE_WASM
+        codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+#endif
+#if MEMORY_FILENAME
+        memoryUrl: buildUrl + "/{{{ MEMORY_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+        symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
+#endif
+        streamingAssetsUrl: "StreamingAssets",
+        autoSyncPersistentDataPath: true,
+        companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+        productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        showBanner: function (msg, type) { if (type === "error") { err.style.display = "block"; err.textContent = msg; } console.warn(msg); }
+      };
+      var s = document.createElement("script");
+      s.src = buildUrl + "/{{{ LOADER_FILENAME }}}";
+      s.onload = function () {
+        try { window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.game.loadingStart(); } catch (e) {}
+        createUnityInstance(canvas, config, function (p) { fill.style.width = Math.round(8 + p * 92) + "%"; })
+          .then(function (inst) { window.unityInstance = inst;
+            document.addEventListener("visibilitychange", function () { if (document.hidden) { try { inst.SendMessage("Game", "Persist"); } catch (e) {} } });
+            window.addEventListener("pagehide", function () { try { inst.SendMessage("Game", "Persist"); } catch (e) {} }); fill.style.width = "100%"; setTimeout(function () { loader.classList.add("done"); canvas.focus(); }, 300); })
+          .catch(function (m) { err.style.display = "block"; err.textContent = "Couldn't start: " + m; });
+      };
+      document.body.appendChild(s);
+    })();
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>
