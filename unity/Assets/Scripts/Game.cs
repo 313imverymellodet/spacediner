@@ -137,7 +137,7 @@ public class Game : MonoBehaviour
 
         Load();
         var url = Application.absoluteURL;
-        Dev = url.Contains("dev=1");
+        Dev = url.Contains("dev=1") && (url.Contains("://localhost") || url.Contains("://127.0.0.1"));   // cheats never on the live site
         DevCam.Install(Dev);
         AutoPlay = url.Contains("bot=1");                  // public: demo / trailer mode
         if (Dev && url.Contains("fresh=1")) Save = new SaveData();

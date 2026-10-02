@@ -90,8 +90,9 @@ public class UI : MonoBehaviour
         cash.rectTransform.localRotation = Quaternion.Euler(0, 0, 12);
         moneyText = Txt(moneyPill, "$0", 54, new Vector2(0, 0.5f), new Vector2(210, 0), Color.white, TextAnchor.MiddleLeft, 240);
 
-        planetText = Txt(root, "", 34, new Vector2(0.5f, 1), new Vector2(0, -60), new Color(1, 1, 1, 0.8f), TextAnchor.MiddleCenter, 900);
-        var ps = planetText.gameObject.AddComponent<Shadow>(); ps.effectColor = new Color(0, 0, 0, 0.5f); ps.effectDistance = new Vector2(2, -2);
+        // planet name sits in its own pill: bare white text vanished against the light diner floor
+        var planetPill = Box(root, new Vector2(0.5f, 1), new Vector2(0, -60), new Vector2(380, 76), new Color(0, 0, 0, 0.45f));
+        planetText = Txt(planetPill, "", 36, new Vector2(0.5f, 0.5f), Vector2.zero, Color.white, TextAnchor.MiddleCenter, 380);
 
         hintPill = Box(root, new Vector2(0.5f, 0), new Vector2(0, 250), new Vector2(760, 90), new Color(1, 1, 1, 0.92f));   // bottom: keeps the top clear for HUD
         hintText = Txt(hintPill, "", 40, new Vector2(0.5f, 0.5f), Vector2.zero, Kit.Hex("#1b1d2e"), TextAnchor.MiddleCenter, 740);
@@ -171,9 +172,10 @@ public class UI : MonoBehaviour
 
     Text Txt(Transform p, string s, int size, Vector2 anchor, Vector2 pos, Color c, TextAnchor align = TextAnchor.MiddleCenter, float w = 600)
     {
+        size = Mathf.Max(size, 28);   // readable floor: Lilita below this turns to mush on phones and short desktop windows
         var rt = Rect("txt", p, anchor, pos, new Vector2(w, size * 1.4f));
         var t = rt.gameObject.AddComponent<Text>();
-        t.font = F; t.fontSize = size; t.fontStyle = FontStyle.Bold; t.alignment = align; t.color = c; t.text = s;
+        t.font = F; t.fontSize = size; t.fontStyle = FontStyle.Normal; t.alignment = align; t.color = c; t.text = s;
         t.raycastTarget = false; t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow;
         return t;
     }
@@ -186,6 +188,7 @@ public class UI : MonoBehaviour
         var b = rt.gameObject.AddComponent<Button>();
         b.targetGraphic = img;
         b.onClick.AddListener(() => { Sfx.I.Click(); onClick(); });
+        rt.gameObject.AddComponent<Press>();
         text = Txt(rt, label, 44, new Vector2(.5f, .5f), Vector2.zero, fg, TextAnchor.MiddleCenter, size.x);
         return b;
     }
