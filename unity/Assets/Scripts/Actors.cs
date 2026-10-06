@@ -96,6 +96,7 @@ public class Player : MonoBehaviour
         s.transform.localPosition = new Vector3(0, 0.62f, 0.42f);
         p.Stack = s.AddComponent<ItemStack>();
         p.Stack.FlyTime = 0.22f; p.Stack.ArcHeight = 0.8f;
+        root.AddComponent<Toss>();
         Kit.FloorQuad("shadow", Kit.Disc, new Color(0, 0, 0, 0.25f), 0.9f, root.transform, Vector3.zero, 0.015f);
         p.maxTag = UI.I.Tag(root.transform, Vector3.up * 2.4f, false);
         p.maxTag.Set("MAX", null);

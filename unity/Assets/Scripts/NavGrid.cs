@@ -53,6 +53,19 @@ public static class NavGrid
         return true;
     }
 
+    // Floor checks for things that drift around (missed tosses).
+    public static bool Walkable(Vector3 p)
+    {
+        if (dirty || blocked == null) Build();
+        if (p.x < MinX || p.x > MaxX || p.z < MinZ || p.z > MaxZ) return false;
+        var c = ToCell(p); return Free(c.x, c.y);
+    }
+    public static Vector3 Snap(Vector3 p)
+    {
+        if (dirty || blocked == null) Build();
+        var c = NearestFree(ToCell(p)); var w = Center(c.x, c.y); w.y = p.y; return w;
+    }
+
     static readonly int[] DX = { 1, -1, 0, 0, 1, 1, -1, -1 }, DZ = { 0, 0, 1, -1, 1, -1, 1, -1 };
 
     public static List<Vector3> Path(Vector3 from, Vector3 to)

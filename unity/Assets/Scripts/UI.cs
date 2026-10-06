@@ -131,7 +131,31 @@ public class UI : MonoBehaviour
         joyKnob.GetComponent<Image>().raycastTarget = false;
         joyBase.gameObject.SetActive(false);
 
+        // ZERO-G TOSS button (hold to aim, let go to throw). Space does the same on keyboards.
+        tossBtn = Rect("toss", root, new Vector2(1, 0), new Vector2(-175, 430), new Vector2(240, 240));
+        var tImg = tossBtn.gameObject.AddComponent<Image>();
+        tImg.sprite = Sprite.Create(Kit.Disc, new Rect(0, 0, 64, 64), new Vector2(.5f, .5f)); tImg.color = Kit.Hex("#7C5CFF");
+        tossHold = tossBtn.gameObject.AddComponent<TossHold>();
+        tossMeter = Img(tossBtn, Sprite.Create(Kit.Ring, new Rect(0, 0, 128, 128), new Vector2(.5f, .5f)), new Vector2(.5f, .5f), Vector2.zero, new Vector2(262, 262));
+        tossMeter.type = Image.Type.Filled; tossMeter.fillMethod = Image.FillMethod.Radial360; tossMeter.fillOrigin = 2; tossMeter.preserveAspect = false;
+        tossLabel = Txt(tossBtn, "TOSS", 54, new Vector2(.5f, .5f), new Vector2(0, 14), Color.white);
+        Txt(tossBtn, "HOLD", 28, new Vector2(.5f, .5f), new Vector2(0, -40), Kit.A(Color.white, 0.8f));
+        tossBtn.gameObject.SetActive(false);
+
         RefreshSound();
+    }
+
+    RectTransform tossBtn; TossHold tossHold; Image tossMeter; Text tossLabel;
+    public bool TossHeld => tossHold && tossHold.Held;
+    public void SetToss(bool show, bool aiming, float power, bool onTarget)
+    {
+        bool on = show && !Blocking;
+        if (tossBtn.gameObject.activeSelf != on) tossBtn.gameObject.SetActive(on);
+        if (!on) return;
+        tossMeter.fillAmount = aiming ? power : 1f;
+        tossMeter.color = aiming ? (onTarget ? Kit.Hex("#7CFF8A") : Kit.Hex("#FF6B6B")) : Kit.A(Color.white, 0.55f);
+        tossLabel.text = aiming ? (onTarget ? "NOW!" : "TOSS") : "TOSS";
+        tossBtn.localScale = Vector3.one * (aiming ? 0.94f : 1f + Mathf.Sin(Time.unscaledTime * 5f) * 0.03f);
     }
 
     public void RefreshSound() => soundText.text = Game.I.Save.muted ? "SOUND\nOFF" : "SOUND\nON";
@@ -487,4 +511,14 @@ public class UI : MonoBehaviour
         if (!EventSystem.current) return false;
         return id < 0 ? EventSystem.current.IsPointerOverGameObject() : EventSystem.current.IsPointerOverGameObject(id);
     }
+}
+
+// Hold-to-aim button: tracks every pointer pressing it.
+public class TossHold : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+{
+    readonly HashSet<int> ids = new HashSet<int>();
+    public bool Held => ids.Count > 0;
+    public void OnPointerDown(PointerEventData e) => ids.Add(e.pointerId);
+    public void OnPointerUp(PointerEventData e) => ids.Remove(e.pointerId);
+    void OnDisable() => ids.Clear();
 }

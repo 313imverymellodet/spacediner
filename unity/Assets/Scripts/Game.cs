@@ -980,7 +980,7 @@ public class Game : MonoBehaviour
         {
             case TutStep.Move: Hint = "Drag anywhere to move"; break;
             case TutStep.PickUp: Hint = "Grab food from the " + P.aName.ToLower(); ArrowTarget = Producers[0].Zone.transform.position; break;
-            case TutStep.Drop: Hint = "Stack it on the counter"; ArrowTarget = Counter.DropZone.transform.position; break;
+            case TutStep.Drop: Hint = Toss.I && Toss.I.Available ? "Zero-G! HOLD TOSS, let go on the counter" : "Stack it on the counter"; ArrowTarget = Counter.DropZone.transform.position; break;
             case TutStep.Serve: Hint = "Stand at the register to serve"; ArrowTarget = Counter.CashierZone.transform.position; break;
             case TutStep.Collect: Hint = "Grab your cash!"; ArrowTarget = Cash.Zone.transform.position; break;
             case TutStep.Buy:

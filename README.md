@@ -1,6 +1,17 @@
 # SPACE DINER
 
-A cozy idle-arcade game (the *My Perfect Hotel* / *Burger Please!* genre) built in Unity 6 for mobile browsers.
+A cozy idle-arcade game built in Unity 6 for mobile browsers.
+
+## The hook: ZERO-G TOSS
+It's low gravity on the Moon, so you don't have to walk your food to the counter: you can **fling it**.
+- Carry food anywhere from 2.4 to 15 m from the counter and the **TOSS** button appears (Space on keyboards).
+- **Hold** it: a power meter sweeps, and a floaty arc and a landing ring preview the throw. The ring turns green, and the button says **NOW!**, when it's on the counter.
+- **Let go**: the whole stack sails over, tumbling in slow motion, and lands in the counter's stock.
+- **Long tosses (5 m+) earn a tip**, and dead-centre bullseyes double it.
+- **Misses** drift around the floor in the low gravity until you walk over them (they're gone after 40 s).
+- The tutorial's counter step teaches it, and "HOLD TOSS!" coach marks pop up the first few times.
+- Analytics: `toss_hit`, `toss_miss`, `toss_long`, `toss_bullseye` (value = distance in metres).
+- Code: `Toss.cs` (aim, flyers, drifting misses, tips); `UI.SetToss` and `TossHold` for the button.
 
 You run a burger joint on the Moon. Grill the food, carry stacks of it to the counter, serve the queue of space travelers, collect your cash, clean their tables, and spend your money on stand-on unlock pads to grow the diner. Once the Moon diner is fully built, you launch it to **Mars** and then to **Europa**. Each planet has a new menu and pays 4× more.
 
