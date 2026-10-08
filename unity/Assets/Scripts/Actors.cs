@@ -98,8 +98,8 @@ public class Player : MonoBehaviour
         p.Stack.FlyTime = 0.22f; p.Stack.ArcHeight = 0.8f;
         root.AddComponent<Toss>();
         Kit.FloorQuad("shadow", Kit.Disc, new Color(0, 0, 0, 0.25f), 0.9f, root.transform, Vector3.zero, 0.015f);
-        p.maxTag = UI.I.Tag(root.transform, Vector3.up * 2.4f, false);
-        p.maxTag.Set("MAX", null);
+        p.maxTag = UI.I.Tag(root.transform, Vector3.up * 2.5f, false);
+        p.maxTag.Style = WorldTag.Kind.Carry;
         return p;
     }
 
@@ -226,7 +226,9 @@ public class Player : MonoBehaviour
         // wobbly tower: lag opposite to local velocity
         var lv = transform.InverseTransformDirection(vel);
         Stack.Sway = Vector3.Lerp(Stack.Sway, new Vector3(-lv.x, 0, -lv.z) * 0.035f, 1f - Mathf.Exp(-Time.deltaTime * 6f));
-        maxTag.Visible = Stack.Full;
+        // carry chip: how tall your stack is (MAX glows)
+        maxTag.Visible = !Stack.Empty;
+        if (maxTag.Visible) maxTag.Set(null, Stack.Full ? "MAX" : Stack.Count + " / " + Stack.Capacity);
     }
 }
 

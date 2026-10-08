@@ -188,6 +188,8 @@ public class CashPile : MonoBehaviour
             value -= share;
             var t = Pile.Pop(out var type);
             Fly.To(t, p.transform, new Vector3(0, 0.8f, 0), 0.25f, () => ItemPool.Release(Item.Cash, t));
+            UI.I.CashFly(p.transform.position);
+            WebBridge.Vibrate(8);
             Game.I.AddMoney(share, true);
             Sfx.I.Coin();
             Game.I.Tutorial(TutStep.Collect);
@@ -396,7 +398,7 @@ public class Pad : MonoBehaviour
     {
         if (Done) return;
         Zone.Progress = (float)(Paid / Cost);
-        if (Tag != null) Tag.Set(Label, Kit.Money(Math.Ceiling(Cost - Paid)));
+        if (Tag != null) { Tag.Set(Label, Kit.Money(Math.Ceiling(Cost - Paid))); Tag.Progress = (float)(Paid / Cost); }
         if (!Zone.PlayerIn) { stay = 0; return; }
         stay += Time.deltaTime;
         if (stay < 0.25f || Game.I.Money < 1) return;

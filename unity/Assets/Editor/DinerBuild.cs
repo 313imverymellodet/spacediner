@@ -32,7 +32,11 @@ public static class DinerBuild
     }
 
     [MenuItem("SPACE DINER/Build WebGL")]
-    public static void WebGL()
+    public static void WebGL() => Build(false);
+    // development build with stack traces in dist-dev/ (never deployed)
+    public static void WebGLDev() => Build(true);
+
+    static void Build(bool dev)
     {
         Setup();
         PlayerSettings.companyName = "SpaceDiner";
@@ -46,7 +50,7 @@ public static class DinerBuild
         PlayerSettings.WebGL.decompressionFallback = true;
         PlayerSettings.WebGL.nameFilesAsHashes = true;
         PlayerSettings.WebGL.dataCaching = true;
-        PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.None;
+        PlayerSettings.WebGL.exceptionSupport = dev ? WebGLExceptionSupport.FullWithStacktrace : WebGLExceptionSupport.None;
         PlayerSettings.WebGL.showDiagnostics = false;
         PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.WebGL, ManagedStrippingLevel.Medium);
         PlayerSettings.stripEngineCode = true;
@@ -56,14 +60,14 @@ public static class DinerBuild
         QualitySettings.SetQualityLevel(QualitySettings.names.Length - 1, true);
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
 
-        var outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../../dist"));
+        var outDir = Path.GetFullPath(Path.Combine(Application.dataPath, dev ? "../../dist-dev" : "../../dist"));
         if (Directory.Exists(outDir)) Directory.Delete(outDir, true);
         var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
         {
             scenes = new[] { ScenePath },
             locationPathName = outDir,
             target = BuildTarget.WebGL,
-            options = BuildOptions.None,
+            options = dev ? BuildOptions.Development : BuildOptions.None,
         });
         Debug.Log("DINER BUILD RESULT: " + report.summary.result + " size=" + report.summary.totalSize + " errors=" + report.summary.totalErrors);
         if (Application.isBatchMode) EditorApplication.Exit(report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded ? 0 : 1);

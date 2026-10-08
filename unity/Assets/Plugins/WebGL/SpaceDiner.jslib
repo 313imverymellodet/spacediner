@@ -22,6 +22,7 @@ mergeInto(LibraryManager.library, {
   },
 
   // synchronous localStorage mirror of the save (IndexedDB flushes are async and can be cut off by a tab close)
+  SD_Vibrate: function (ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} },
   SD_SaveMirror: function (keyPtr, jsonPtr) { try { localStorage.setItem(UTF8ToString(keyPtr), UTF8ToString(jsonPtr)); } catch (e) {} },
   SD_LoadMirror: function (keyPtr) {
     var v = null;

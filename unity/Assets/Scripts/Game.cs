@@ -103,8 +103,14 @@ public class Game : MonoBehaviour
             if (lv[k] < UpgradeMax[k] && UpgradeCost(k) < best) { best = UpgradeCost(k); kind = k; }
         return best;
     }
-    public string Hint;
+    public string Hint, HintCode;
+    public Sprite HintIcon;
+    public Color HintColor = Kit.Hex("#ffc93c");
     public Vector3? ArrowTarget;
+    public double IncomePerMin => Save.rate * 60;
+    public int PadsTotal => padDefs != null ? padDefs.Count - 1 : 1;
+    public int PadsDone { get { int n = 0; if (padDefs != null) foreach (var d in padDefs) if (d.id != "rocket" && Save.done.Contains(d.id)) n++; return n; } }
+    public float ExpansionProgress => Mathf.Clamp01(PadsDone / (float)Mathf.Max(1, PadsTotal));
     public float BoostLeft;
     public bool BoostReady => boostCooldown <= 0 && Save.tut >= (int)TutStep.Buy && !launching;
     float boostCooldown = 60f;
@@ -122,7 +128,7 @@ public class Game : MonoBehaviour
     static readonly Vector3 Spawn = new Vector3(5f, 0, -14f), Exit = new Vector3(5.3f, 0, -14.6f);
     static readonly Vector3 RocketPos = new Vector3(7.3f, 0, -8.4f);
 
-    struct PadDef { public string id; public double cost; public Vector3 pos; public string label; public Action build; }
+    struct PadDef { public string id; public double cost; public Vector3 pos; public string label, desc; public Item? icon; public Action build; }
     List<PadDef> padDefs;
 
     // ======================================================================
@@ -328,7 +334,7 @@ public class Game : MonoBehaviour
     {
         BoostLeft = secs; boostCooldown = cooldown;
         Sfx.I.LevelUp();
-        UI.I.FloatText(Player.transform.position + Vector3.up * 2.5f, "2× CASH!", Kit.Hex("#FFC93C"), 64);
+        UI.I.Celebrate("BOOST ACTIVE", "2X CASH", "Every sale pays double for " + Mathf.RoundToInt(secs) + "s", Kit.Hex("#FFC93C"));
     }
 
     // ======================================================================
@@ -372,25 +378,25 @@ public class Game : MonoBehaviour
         double m = PlanetMult;
         padDefs = new List<PadDef>
         {
-            new PadDef { id = "table2", cost = 25, pos = V(TablePos[1]), label = "NEW TABLE", build = () => BuildTable(1) },
-            new PadDef { id = "table3", cost = 60, pos = V(TablePos[2]), label = "NEW TABLE", build = () => BuildTable(2) },
-            new PadDef { id = "grillA2", cost = 120, pos = new Vector3(SlotX[1], 0, PickZ + 0.2f), label = "2ND " + p.aName, build = () => BuildProducer(1, p.a, false) },
-            new PadDef { id = "upgrades", cost = 90, pos = new Vector3(6.4f, 0, 5.7f), label = "UPGRADES", build = BuildTerminal },
-            new PadDef { id = "stationB", cost = 200, pos = new Vector3(SlotX[2], 0, PickZ + 0.2f), label = p.bName, build = () => { BuildProducer(2, p.b, false); Toast("NEW ON THE MENU: " + Items.Name(p.b).ToUpper() + "!"); } },
-            new PadDef { id = "table4", cost = 260, pos = V(TablePos[3]), label = "NEW TABLE", build = () => BuildTable(3) },
-            new PadDef { id = "cashier", cost = 400, pos = new Vector3(3.3f, 0, 6.2f), label = "HIRE CASHIER", build = () => Hire(Bot.Job.Cashier) },
-            new PadDef { id = "stationC", cost = 550, pos = new Vector3(SlotX[3], 0, PickZ + 0.2f), label = p.cName, build = () => { BuildProducer(3, p.c, false); Toast("NEW ON THE MENU: " + Items.Name(p.c).ToUpper() + "!"); } },
-            new PadDef { id = "table5", cost = 700, pos = V(TablePos[4]), label = "NEW TABLE", build = () => BuildTable(4) },
-            new PadDef { id = "runner", cost = 900, pos = new Vector3(-0.1f, 0, 5.2f), label = "HIRE RUNNER", build = () => Hire(Bot.Job.Runner) },
-            new PadDef { id = "table6", cost = 1100, pos = V(TablePos[5]), label = "NEW TABLE", build = () => BuildTable(5) },
-            new PadDef { id = "cleaner", cost = 1300, pos = new Vector3(-6.9f, 0, 3.6f), label = "HIRE CLEANER", build = () => Hire(Bot.Job.Cleaner) },
-            new PadDef { id = "delivery", cost = 650, pos = new Vector3(7.9f, 0, 2.3f), label = "DRONE DELIVERY", build = BuildDelivery },
-            new PadDef { id = "jukebox", cost = 800, pos = new Vector3(-8.2f, 0, -2.8f), label = "JUKEBOX", build = BuildJukebox },
-            new PadDef { id = "table7", cost = 1500, pos = V(TablePos[6]), label = "PATIO TABLE", build = () => BuildTable(6) },
-            new PadDef { id = "table8", cost = 1800, pos = V(TablePos[7]), label = "PATIO TABLE", build = () => BuildTable(7) },
-            new PadDef { id = "plants", cost = 2000, pos = new Vector3(-8.2f, 0, -6.4f), label = "SPACE GARDEN", build = BuildPlants },
-            new PadDef { id = "table9", cost = 2300, pos = V(TablePos[8]), label = "PATIO TABLE", build = () => BuildTable(8) },
-            new PadDef { id = "table10", cost = 2700, pos = V(TablePos[9]), label = "PATIO TABLE", build = () => BuildTable(9) },
+            new PadDef { id = "table2", cost = 25, pos = V(TablePos[1]), label = "NEW TABLE", desc = "More seats, more customers", build = () => BuildTable(1) },
+            new PadDef { id = "table3", cost = 60, pos = V(TablePos[2]), label = "NEW TABLE", desc = "More seats, more customers", build = () => BuildTable(2) },
+            new PadDef { id = "grillA2", cost = 120, pos = new Vector3(SlotX[1], 0, PickZ + 0.2f), label = "2ND " + p.aName, desc = "Twice the " + Items.Name(p.a).ToLower() + " output", icon = p.a, build = () => BuildProducer(1, p.a, false) },
+            new PadDef { id = "upgrades", cost = 90, pos = new Vector3(6.4f, 0, 5.7f), label = "UPGRADES", desc = "Speed, capacity, profit and staff upgrades", build = BuildTerminal },
+            new PadDef { id = "stationB", cost = 200, pos = new Vector3(SlotX[2], 0, PickZ + 0.2f), label = p.bName, desc = "New on the menu: " + Items.Name(p.b), icon = p.b, build = () => BuildProducer(2, p.b, false) },
+            new PadDef { id = "table4", cost = 260, pos = V(TablePos[3]), label = "NEW TABLE", desc = "More seats, more customers", build = () => BuildTable(3) },
+            new PadDef { id = "cashier", cost = 400, pos = new Vector3(3.3f, 0, 6.2f), label = "HIRE CASHIER", desc = "They work the register for you", build = () => Hire(Bot.Job.Cashier) },
+            new PadDef { id = "stationC", cost = 550, pos = new Vector3(SlotX[3], 0, PickZ + 0.2f), label = p.cName, desc = "New on the menu: " + Items.Name(p.c), icon = p.c, build = () => BuildProducer(3, p.c, false) },
+            new PadDef { id = "table5", cost = 700, pos = V(TablePos[4]), label = "NEW TABLE", desc = "More seats, more customers", build = () => BuildTable(4) },
+            new PadDef { id = "runner", cost = 900, pos = new Vector3(-0.1f, 0, 5.2f), label = "HIRE RUNNER", desc = "Food goes to the counter on its own", build = () => Hire(Bot.Job.Runner) },
+            new PadDef { id = "table6", cost = 1100, pos = V(TablePos[5]), label = "NEW TABLE", desc = "More seats, more customers", build = () => BuildTable(5) },
+            new PadDef { id = "cleaner", cost = 1300, pos = new Vector3(-6.9f, 0, 3.6f), label = "HIRE CLEANER", desc = "Tables stay spotless", build = () => Hire(Bot.Job.Cleaner) },
+            new PadDef { id = "delivery", cost = 650, pos = new Vector3(7.9f, 0, 2.3f), label = "DRONE DELIVERY", desc = "Bulk orders that pay double", build = BuildDelivery },
+            new PadDef { id = "jukebox", cost = 800, pos = new Vector3(-8.2f, 0, -2.8f), label = "JUKEBOX", desc = "+25% customers", build = BuildJukebox },
+            new PadDef { id = "table7", cost = 1500, pos = V(TablePos[6]), label = "PATIO TABLE", desc = "Seating under the stars", build = () => BuildTable(6) },
+            new PadDef { id = "table8", cost = 1800, pos = V(TablePos[7]), label = "PATIO TABLE", desc = "Seating under the stars", build = () => BuildTable(7) },
+            new PadDef { id = "plants", cost = 2000, pos = new Vector3(-8.2f, 0, -6.4f), label = "SPACE GARDEN", desc = "+20% customers", build = BuildPlants },
+            new PadDef { id = "table9", cost = 2300, pos = V(TablePos[8]), label = "PATIO TABLE", desc = "Seating under the stars", build = () => BuildTable(8) },
+            new PadDef { id = "table10", cost = 2700, pos = V(TablePos[9]), label = "PATIO TABLE", desc = "Seating under the stars", build = () => BuildTable(9) },
             new PadDef { id = "rocket", cost = 4000, pos = RocketPos + new Vector3(-2.6f, 0, 2.2f), label = "LAUNCH TO " + Planets[(Save.planet + 1) % Planets.Length].name, build = Launch },
         };
         padDefs.Sort((a, b) => a.id == "rocket" ? 1 : b.id == "rocket" ? -1 : a.cost.CompareTo(b.cost));
@@ -430,6 +436,8 @@ public class Game : MonoBehaviour
             pad.OnDone = dd.build;
             pad.Zone = Zone.Make(go.transform, Vector3.zero, 0.95f, Kit.Hex("#FFC93C"), "padzone");
             pad.Tag = UI.I.Tag(go.transform, Vector3.up * 0.4f, false);
+            pad.Tag.Style = WorldTag.Kind.Pad;
+            pad.Tag.Set(pad.Label, Kit.Money(Math.Ceiling(pad.Cost - pad.Paid))); pad.Tag.Progress = (float)(pad.Paid / pad.Cost);
             pads.Add(pad);
             if (!restoring) StartCoroutine(PopIn(go.transform));
         }
@@ -445,6 +453,14 @@ public class Game : MonoBehaviour
         Sfx.I.Unlock();
         Burst(pos, Kit.Hex("#FFC93C"));
         pad.OnDone?.Invoke();
+        var def = padDefs.Find(x => x.id == pad.Id);
+        if (pad.Id != "rocket")
+        {
+            bool hire = pad.Label.StartsWith("HIRE");
+            UI.I.Celebrate(hire ? "NEW STAFF" : def.icon.HasValue ? "NEW STATION" : "UNLOCKED", hire ? pad.Label.Replace("HIRE ", "") + " HIRED" : pad.Label, def.desc ?? "",
+                hire ? Kit.Hex("#7cff8a") : Kit.Hex("#ff5c8a"), def.icon.HasValue ? UI.Icon(def.icon.Value) : null);
+        }
+        WebBridge.Vibrate(40);
         Tutorial(TutStep.Buy);
         NavGrid.MarkDirty();
         WebBridge.Event("unlock_" + pad.Id, (int)Math.Min(int.MaxValue, pad.Cost));
@@ -691,7 +707,7 @@ public class Game : MonoBehaviour
         Color tint = job switch { Bot.Job.Cashier => Kit.Hex("#b6ff7a"), Bot.Job.Runner => Kit.Hex("#ffb36b"), _ => Kit.Hex("#7ae9ff") };
         var b = Bot.Create(world, job, home, tint);
         Bots.Add(b);
-        if (!restoring) { StartCoroutine(PopIn(b.transform)); Toast(job switch { Bot.Job.Cashier => "CASHIER HIRED! They'll serve for you.", Bot.Job.Runner => "RUNNER HIRED! Food goes to the counter.", _ => "CLEANER HIRED! Tables stay spotless." }); }
+        if (!restoring) StartCoroutine(PopIn(b.transform));
     }
 
     Transform rocket;
@@ -809,7 +825,7 @@ public class Game : MonoBehaviour
         dw.Tag = UI.I.Tag(root.transform, new Vector3(0.8f, 2.9f, 0), true);
         dw.Tag.Visible = false;
         Delivery = dw;
-        if (!restoring) { StartCoroutine(PopIn(root.transform)); Toast("DRONE DELIVERY OPEN! Bulk orders pay double."); }
+        if (!restoring) StartCoroutine(PopIn(root.transform));
     }
 
     void BuildJukebox()
@@ -823,7 +839,7 @@ public class Game : MonoBehaviour
         root.AddComponent<Bouncer>();
         Popularity += 0.25f;
         Sfx.I.MusicBoost();
-        if (!restoring) { StartCoroutine(PopIn(root.transform)); Toast("JUKEBOX! +25% customers"); }
+        if (!restoring) StartCoroutine(PopIn(root.transform));
     }
 
     void BuildPlants()
@@ -835,7 +851,7 @@ public class Game : MonoBehaviour
         foreach (var sp in new[] { new Vector3(-8.9f, 0, -4.9f), new Vector3(-8.9f, 0, -0.7f) })
             Kit.Spawn("Furniture/plantSmall2", 0.9f, root.transform, sp);
         Popularity += 0.2f;
-        if (!restoring) { StartCoroutine(PopIn(root.transform)); Toast("SPACE GARDEN! +20% customers"); }
+        if (!restoring) StartCoroutine(PopIn(root.transform));
     }
 
     // ======================================================================
@@ -897,7 +913,7 @@ public class Game : MonoBehaviour
             Save.quest++;
             Cash.Deposit(reward, Player.transform.position + Vector3.up * 3f);
             Sfx.I.LevelUp();
-            UI.I.FloatText(Player.transform.position + Vector3.up * 2.8f, "QUEST COMPLETE!  +" + Kit.Money(reward), Kit.Hex("#FFC93C"), 52);
+            UI.I.Celebrate("QUEST COMPLETE", "+" + Kit.Money(reward), QuestText, Kit.Hex("#FFC93C"));
             UI.I.PunchQuest();
             WebBridge.Event("quest_" + Save.quest);
             dirty = true;
@@ -969,29 +985,33 @@ public class Game : MonoBehaviour
         if (Save.tut != (int)s) return;
         Save.tut++;
         dirty = true;
-        if (Save.tut == (int)TutStep.Done) { Toast("YOU'RE A NATURAL! Keep expanding."); Persist(); }
+        if (Save.tut == (int)TutStep.Done) { UI.I.Celebrate("TRAINING COMPLETE", "YOU'RE A NATURAL", "Hire staff and keep expanding", Kit.Hex("#7cff8a")); Persist(); }
     }
+
+    static readonly Color cGo = Kit.Hex("#4de8c2"), cCash = Kit.Hex("#7cff8a"), cBuild = Kit.Hex("#ffc93c"), cWarn = Kit.Hex("#ff6b6b");
+    void Code(string code, Color c) { HintCode = code; HintColor = c; HintIcon = null; }
+    void Food(Item i) { HintIcon = UI.Icon(i); HintCode = null; }
 
     void UpdateGuidance()
     {
-        ArrowTarget = null; Hint = null;
+        ArrowTarget = null; Hint = null; Code("GO", cGo);
         var step = (TutStep)Save.tut;
         switch (step)
         {
             case TutStep.Move: Hint = "Drag anywhere to move"; break;
-            case TutStep.PickUp: Hint = "Grab food from the " + P.aName.ToLower(); ArrowTarget = Producers[0].Zone.transform.position; break;
-            case TutStep.Drop: Hint = Toss.I && Toss.I.Available ? "Zero-G! HOLD TOSS, let go on the counter" : "Stack it on the counter"; ArrowTarget = Counter.DropZone.transform.position; break;
-            case TutStep.Serve: Hint = "Stand at the register to serve"; ArrowTarget = Counter.CashierZone.transform.position; break;
-            case TutStep.Collect: Hint = "Grab your cash!"; ArrowTarget = Cash.Zone.transform.position; break;
+            case TutStep.PickUp: Food(P.a); Hint = "Grab food from the " + P.aName.ToLower(); ArrowTarget = Producers[0].Zone.transform.position; break;
+            case TutStep.Drop: Food(P.a); Hint = Toss.I && Toss.I.Available ? "Zero-G! HOLD TOSS, let go on the counter" : "Stack it on the counter"; ArrowTarget = Counter.DropZone.transform.position; break;
+            case TutStep.Serve: Code("$", cCash); Hint = "Stand at the register to serve"; ArrowTarget = Counter.CashierZone.transform.position; break;
+            case TutStep.Collect: Code("$", cCash); Hint = "Grab your cash!"; ArrowTarget = Cash.Zone.transform.position; break;
             case TutStep.Buy:
                 var pad = pads.Count > 0 ? pads[0] : null;
-                if (pad) { Hint = "Stand on the pad to build"; ArrowTarget = pad.transform.position; }
+                if (pad) { Code("+", cBuild); Hint = "Stand on the pad to build"; ArrowTarget = pad.transform.position; }
                 break;
             case TutStep.Clean:
                 var dt = Tables.Find(t => t.Dirty);
-                if (dt) { Hint = "Clear the dirty plates"; ArrowTarget = dt.Zone.transform.position; }
+                if (dt) { Food(Item.Trash); Hint = "Clear the dirty plates"; ArrowTarget = dt.Zone.transform.position; }
                 break;
-            case TutStep.Trash: Hint = "Toss plates in the trash"; ArrowTarget = Trash.Zone.transform.position; break;
+            case TutStep.Trash: Food(Item.Trash); Hint = "Toss plates in the trash"; ArrowTarget = Trash.Zone.transform.position; break;
             default:
                 // After the tutorial: point at a pad you can afford, or nudge about blockers.
                 Pad afford = null;
@@ -999,7 +1019,7 @@ public class Game : MonoBehaviour
                 if (afford) ArrowTarget = afford.transform.position;
                 else if (Delivery && Delivery.WantsFood && Player.Stack.HasFood())
                 {
-                    foreach (var it in Player.Stack.Types()) if (Delivery.Needs(it)) { Hint = "The drone wants your food!"; ArrowTarget = Delivery.Zone.transform.position; break; }
+                    foreach (var it in Player.Stack.Types()) if (Delivery.Needs(it)) { Food(it); Hint = "The drone wants your food!"; ArrowTarget = Delivery.Zone.transform.position; break; }
                 }
                 else if (Counter.Queue.Count > 0 && Counter.Queue[0].State == Customer.St.WaitSeat && !Bots.Exists(b => b.Kind == Bot.Job.Cleaner))
                 {
@@ -1007,9 +1027,9 @@ public class Game : MonoBehaviour
                     bool canDrop = false;
                     foreach (var kv in Counter.Stock) if (Player.Stack.Has(kv.Key) && !kv.Value.Full) canDrop = true;
                     // food in your hands blocks picking up plates; if the counter is full too, the trash is the way out
-                    if (d && Player.Stack.HasFood() && !canDrop) { Hint = "Hands full! Toss extra food in the trash"; ArrowTarget = Trash.Zone.transform.position; }
-                    else if (d && Player.Stack.HasFood()) { Hint = "Drop your food on the counter first"; ArrowTarget = Counter.DropZone.transform.position; }
-                    else if (d) { Hint = "Customers need a clean table!"; ArrowTarget = d.Zone.transform.position; }
+                    if (d && Player.Stack.HasFood() && !canDrop) { Code("!", cWarn); Hint = "Hands full! Toss extra food in the trash"; ArrowTarget = Trash.Zone.transform.position; }
+                    else if (d && Player.Stack.HasFood()) { Code("!", cWarn); Hint = "Drop your food on the counter first"; ArrowTarget = Counter.DropZone.transform.position; }
+                    else if (d) { Food(Item.Trash); Hint = "Customers need a clean table!"; ArrowTarget = d.Zone.transform.position; }
                 }
                 break;
         }
@@ -1127,7 +1147,7 @@ public class Game : MonoBehaviour
         BuildWorld(true);
         Cam.transform.position = Player.transform.position + new Vector3(0, 30, -20);
         Sfx.I.Unlock();
-        UI.I.Confirm("WELCOME TO " + P.name + "!", "New planet, new menu: " + Items.Name(P.a) + ", " + Items.Name(P.b) + " & " + Items.Name(P.c) + ".\nEverything earns 4× more here.", "LET'S COOK!", null);
+        UI.I.Celebrate("NEW PLANET", P.name, "New menu: " + Items.Name(P.a) + ", " + Items.Name(P.b) + " & " + Items.Name(P.c) + ". Everything earns 4x", P.rim, UI.Icon(P.a));
     }
 
     // ======================================================================

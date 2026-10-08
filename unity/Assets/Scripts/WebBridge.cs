@@ -16,6 +16,7 @@ public class WebBridge : MonoBehaviour
     [DllImport("__Internal")] static extern int SD_AdsAvailable();
     [DllImport("__Internal")] static extern void SD_SaveMirror(string key, string json);
     [DllImport("__Internal")] static extern string SD_LoadMirror(string key);
+    [DllImport("__Internal")] static extern void SD_Vibrate(int ms);
 #endif
 
     void Awake() { I = this; gameObject.name = "WebBridge"; }
@@ -78,6 +79,14 @@ public class WebBridge : MonoBehaviour
         return SD_LoadMirror(key);
 #else
         return null;
+#endif
+    }
+
+    // a short buzz on phones that support it (pickups, unlocks)
+    public static void Vibrate(int ms)
+    {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        SD_Vibrate(ms);
 #endif
     }
 
