@@ -1117,10 +1117,17 @@ public class Game : MonoBehaviour
         if (!Player || launching) return;
         float aspect = (float)Screen.width / Mathf.Max(1, Screen.height);
         float dist = Mathf.Lerp(1.72f, 1.05f, Mathf.InverseLerp(0.46f, 1.3f, aspect));
+        // Extra-tall phones (20:9 and up) are narrower than 16:9: pull back so about as much of the diner's width
+        // stays on screen. Ground half-width = tan(fov/2) * aspect * camera distance (14.36 m per unit of dist).
+        float widthPerDist = Mathf.Tan(Cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * aspect * 14.36f;
+        dist = Mathf.Max(dist, Mathf.Min(4.6f / widthPerDist, 2f));
         var focus = Player.transform.position;
         // Portrait screens are narrow: stay centred on the action, drift gently toward the player.
         float follow = Mathf.Lerp(0.35f, 1f, Mathf.InverseLerp(0.5f, 1.2f, aspect));
         focus.x = Mathf.Clamp(Mathf.Lerp(-2.2f, focus.x, follow), -5.5f, 5.5f);
+        // ...but never let the player walk off the side of the screen
+        float slack = Mathf.Max(0.5f, widthPerDist * dist - 1.4f);
+        focus.x = Mathf.Clamp(focus.x, Player.transform.position.x - slack, Player.transform.position.x + slack);
         focus.z = Mathf.Clamp(focus.z, -9f, 6.5f);
         var want = focus + new Vector3(0, 11.5f, -8.6f) * dist;
         Cam.transform.position = Vector3.Lerp(Cam.transform.position, want, 1f - Mathf.Exp(-Time.deltaTime * 6f));
