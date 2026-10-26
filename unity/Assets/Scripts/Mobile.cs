@@ -112,14 +112,3 @@ public class SafeArea : MonoBehaviour
         rt.offsetMin = rt.offsetMax = Vector2.zero;
     }
 }
-
-// Ads for the Google Play build. A stub for now: no ad network is wired in yet, so the game falls back to
-// its no-ad paths (free boost, plain collect). The real SDK and ad unit IDs plug in here later.
-public static class MobileAds
-{
-    public static bool Available => false;
-
-    public static void ShowRewarded(System.Action<bool> done) => done?.Invoke(false);
-
-    public static void ShowInterstitial() { }
-}
