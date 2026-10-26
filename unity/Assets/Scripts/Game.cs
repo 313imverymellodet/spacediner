@@ -140,6 +140,7 @@ public class Game : MonoBehaviour
         QualitySettings.shadowCascades = 1;
         QualitySettings.shadowResolution = ShadowResolution.Medium;
         QualitySettings.antiAliasing = 2;
+        Mobile.Init();   // Play build: native refresh rate, back button handled by UI
 
         Load();
         var url = Application.absoluteURL;
@@ -270,9 +271,29 @@ public class Game : MonoBehaviour
             Player.Teleport(new Vector3(Mathf.Clamp(Save.px, -9f, 9f), 0, Mathf.Clamp(Save.pz, -11f, 9f)));
     }
 
-    void OnApplicationPause(bool p) { if (p) Persist(); }
-    void OnApplicationFocus(bool f) { if (!f) Persist(); }
+    void OnApplicationPause(bool p) { if (p) Leave(); else Return(); }
+    void OnApplicationFocus(bool f) { if (!f) Leave(); else if (Mobile.Native) Return(); }
     void OnApplicationQuit() => Persist();
+
+    // Leaving the app (home, app switch, a call): save now, since Android may kill a background app without warning.
+    // The Play build also pauses, and coming back after a while pays offline earnings just like a cold start.
+    bool away;
+    void Leave()
+    {
+        Persist();
+        if (!Mobile.Native) return;
+        away = true;
+        if (UI.I) UI.I.Pause();
+    }
+    void Return()
+    {
+        if (!away) return;
+        away = false;
+        OfflineEarnings();
+    }
+
+    public string ShareText() =>
+        "My diner on " + PlanetName + " makes " + Kit.Money(Math.Max(0, IncomePerMin)) + " a minute in Space Diner! https://play.google.com/store/apps/details?id=com.mellovibes.spacediner";
 
     public void SavePad(string id, double paid)
     {

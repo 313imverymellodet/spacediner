@@ -33,7 +33,7 @@ public class UI : MonoBehaviour
 {
     public static UI I;
     Canvas canvas; CanvasScaler scaler;
-    RectTransform root, hud, tagLayer, fx;
+    RectTransform root, safe, hud, tagLayer, fx;
     Font F => Kit.Font;
 
     public static readonly Color Panel = new Color(0.06f, 0.06f, 0.15f, 0.9f), Ink = Kit.Hex("#1b1d2e"),
@@ -53,7 +53,7 @@ public class UI : MonoBehaviour
     HudBar expBar, questBar;
     float moneyPunch, questPunch, objShown; double shownMoney;
     string lastHint;
-    public bool Blocking => modal != null && modalBlocks;
+    public bool Blocking => modal != null && modalBlocks || Paused;
     bool modalBlocks;
     RectTransform modal;
 
@@ -82,7 +82,8 @@ public class UI : MonoBehaviour
         root = (RectTransform)transform;
 
         tagLayer = Fill("tags", root);
-        hud = Fill("hud", root);
+        safe = Fill("safe", root); safe.gameObject.AddComponent<SafeArea>();   // notches, punch-hole cameras, gesture bar
+        hud = Fill("hud", safe);
         BuildHud();
         fx = Fill("fx", root);
 
@@ -194,6 +195,7 @@ public class UI : MonoBehaviour
             Game.I.Save.muted = !Game.I.Save.muted; Sfx.I.SetMuted(Game.I.Save.muted); RefreshSound();
         }, out soundText).transform;
         soundText.fontSize = 26;
+        if (Mobile.Native) Button(hud, "II", new Vector2(1, 1), new Vector2(-232, -72), new Vector2(124, 112), Kit.A(Panel, 0.95f), Color.white, Pause, out _);
 
         // quest card
         questCard = PanelBox(hud, new Vector2(0, 1), new Vector2(40 + 240, -214), new Vector2(480, 128), Kit.A(Gold, 0.32f));
@@ -451,8 +453,10 @@ public class UI : MonoBehaviour
         modal = Fill("modal", root);
         modalBlocks = blocking;
         if (blocking) { var shade = modal.gameObject.AddComponent<Image>(); shade.color = new Color(0.02f, 0.02f, 0.08f, 0.6f); }
+        var ms = Fill("safe", modal); ms.gameObject.AddComponent<SafeArea>();
+        if (pauseUI) pauseUI.SetAsLastSibling();
         // Non-blocking panels sit low so the player can still steer (walk off the pad to close).
-        var card = PanelBox(modal, blocking ? new Vector2(.5f, .5f) : new Vector2(.5f, 0), blocking ? new Vector2(0, -40) : new Vector2(0, h * 0.5f + 60), new Vector2(940, h), Kit.A(Pink, 0.45f), 0.97f);
+        var card = PanelBox(ms, blocking ? new Vector2(.5f, .5f) : new Vector2(.5f, 0), blocking ? new Vector2(0, -40) : new Vector2(0, h * 0.5f + 60), new Vector2(940, h), Kit.A(Pink, 0.45f), 0.97f);
         card.GetComponentsInChildren<Image>()[1].raycastTarget = true;
         var top = Img(card, null, new Vector2(.5f, 1), new Vector2(0, -8), new Vector2(860, 6)); top.color = Kit.A(Pink, 0.85f); top.preserveAspect = false;
         StartCoroutine(PopIn(card));
@@ -468,7 +472,7 @@ public class UI : MonoBehaviour
     public void CloseModal()
     {
         if (modal) Destroy(modal.gameObject);
-        modal = null; upgrades = null;
+        modal = null; upgrades = null; modalBack = null;
         upgradeRefresh.Clear();
     }
 
@@ -545,17 +549,85 @@ public class UI : MonoBehaviour
         if (ad != null) Button(card, "WATCH AD: " + ad, new Vector2(.5f, 0), new Vector2(0, y + 150), new Vector2(720, 120), Gold, Ink, () => { CloseModal(); onAd(); }, out _);
         Button(card, ok, new Vector2(.5f, 0), new Vector2(cancel != null ? 180 : 0, y - (ad != null ? 10 : 0)), new Vector2(cancel != null ? 340 : 720, 120), Kit.Hex("#35C46A"), Color.white, () => { CloseModal(); onOk?.Invoke(); }, out _);
         if (cancel != null) Button(card, cancel, new Vector2(.5f, 0), new Vector2(-190, y), new Vector2(340, 120), new Color(1, 1, 1, 0.12f), Color.white, CloseModal, out _);
+        modalBack = cancel != null ? (Action)CloseModal : () => { CloseModal(); onOk?.Invoke(); };   // Android back never throws away a payout
+    }
+
+    // ---------------- pause (Play build: HUD button, Android back, leaving the app) ----------------
+    RectTransform pauseUI; Text pauseVibe, pauseSound;
+    Action modalBack;
+    public bool Paused { get; private set; }
+
+    public void Pause()
+    {
+        if (Paused) return;
+        Paused = true;
+        Time.timeScale = 0f;
+        AudioListener.pause = true;
+        if (!pauseUI) BuildPause();
+        pauseUI.gameObject.SetActive(true);
+        pauseUI.SetAsLastSibling();
+        RefreshPause();
+        Game.I.Persist();
+    }
+
+    public void Resume()
+    {
+        if (!Paused) return;
+        Paused = false;
+        Time.timeScale = 1f;
+        AudioListener.pause = false;
+        pauseUI.gameObject.SetActive(false);
+    }
+
+    void BuildPause()
+    {
+        pauseUI = Fill("pause", root);
+        var shade = pauseUI.gameObject.AddComponent<Image>(); shade.color = new Color(0.02f, 0.02f, 0.08f, 0.82f);
+        var ps = Fill("safe", pauseUI); ps.gameObject.AddComponent<SafeArea>();
+        var t = Txt(ps, "PAUSED", 120, new Vector2(.5f, .5f), new Vector2(0, 560), Color.white); Shadow(t, 5);
+        Txt(ps, "Your diner is on hold until you come back.", 30, new Vector2(.5f, .5f), new Vector2(0, 430), Soft, TextAnchor.MiddleCenter, 900);
+        Button(ps, "RESUME", new Vector2(.5f, .5f), new Vector2(0, 220), new Vector2(640, 160), Kit.Hex("#35C46A"), Color.white, Resume, out var resumeText);
+        resumeText.fontSize = 64;
+        Button(ps, "", new Vector2(.5f, .5f), new Vector2(-165, 30), new Vector2(310, 120), new Color(1, 1, 1, 0.12f), Color.white, () =>
+        {
+            Game.I.Save.muted = !Game.I.Save.muted; Sfx.I.SetMuted(Game.I.Save.muted); RefreshSound(); RefreshPause(); Game.I.Persist();
+        }, out pauseSound);
+        Button(ps, "", new Vector2(.5f, .5f), new Vector2(165, 30), new Vector2(310, 120), new Color(1, 1, 1, 0.12f), Color.white, () =>
+        {
+            PlayerPrefs.SetInt("haptics_off", PlayerPrefs.GetInt("haptics_off", 0) == 1 ? 0 : 1); PlayerPrefs.Save();
+            Mobile.Vibrate(30); RefreshPause();
+        }, out pauseVibe);
+        pauseSound.fontSize = pauseVibe.fontSize = 34;
+        Button(ps, "SHARE MY DINER", new Vector2(.5f, .5f), new Vector2(0, -140), new Vector2(640, 120), Gold, Ink, () => Mobile.Share(Game.I.ShareText(), "Share Space Diner"), out _);
+        Txt(ps, "Press back again to leave the game", 28, new Vector2(.5f, .5f), new Vector2(0, -300), Soft, TextAnchor.MiddleCenter, 900);
+        pauseUI.gameObject.SetActive(false);
+    }
+
+    void RefreshPause()
+    {
+        if (!pauseUI) return;
+        pauseSound.text = Game.I.Save.muted ? "SOUND OFF" : "SOUND ON";
+        pauseVibe.text = PlayerPrefs.GetInt("haptics_off", 0) == 1 ? "VIBRATION OFF" : "VIBRATION ON";
+    }
+
+    // Android back: close the open panel, else pause; back on the pause screen goes home (the game keeps its save).
+    void Back()
+    {
+        if (Paused) { Game.I.Persist(); Mobile.MoveToBack(); return; }
+        if (modal) { if (upgrades) CloseUpgrades(); else if (modalBack != null) modalBack(); else CloseModal(); return; }
+        Pause();
     }
 
     // ---------------- per-frame ----------------
     void Update()
     {
+        if (Mobile.Native && Input.GetKeyDown(KeyCode.Escape)) Back();
         float aspect = (float)Screen.width / Mathf.Max(1, Screen.height);
         scaler.matchWidthOrHeight = aspect > 0.75f ? 1f : 0f;
         // landscape: the canvas matches height, so scale the HUD up to a comfortable size
         float hs = root.rect.width > root.rect.height ? 1.3f : 1f;
         hud.anchorMin = hud.anchorMax = new Vector2(.5f, .5f);
-        hud.sizeDelta = root.rect.size / hs; hud.localScale = Vector3.one * hs;
+        hud.sizeDelta = safe.rect.size / hs; hud.localScale = Vector3.one * hs;
         tagScale = hs > 1f ? 1.2f : 1f; tagLayer.localScale = Vector3.one * tagScale;   // world tags grow a little too (they position by screen point)
         UpdateJoystick();
         if (Game.I.Dev && Input.GetKeyDown(KeyCode.H)) canvas.enabled = !canvas.enabled;   // dev: clean frames for store art
