@@ -1,6 +1,15 @@
 {
+  "scopedRegistries": [
+    {
+      "name": "OpenUPM",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.google.ads.mobile"
+      ]
+    }
+  ],
   "dependencies": {
-    "com.unity.ugui": "2.6.0",
+    "com.google.ads.mobile": "11.6.0",
     "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.animation": "1.0.0",
     "com.unity.modules.audio": "1.0.0",
@@ -8,6 +17,9 @@
     "com.unity.modules.jsonserialize": "1.0.0",
     "com.unity.modules.physics": "1.0.0",
     "com.unity.modules.ui": "1.0.0",
-    "com.unity.modules.uielements": "1.0.0"
+    "com.unity.modules.uielements": "1.0.0",
+    "com.unity.modules.unitywebrequest": "1.0.0",
+    "com.unity.purchasing": "5.4.4",
+    "com.unity.ugui": "2.6.0"
   }
 }

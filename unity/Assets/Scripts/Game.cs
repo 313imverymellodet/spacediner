@@ -141,6 +141,7 @@ public class Game : MonoBehaviour
         QualitySettings.shadowResolution = ShadowResolution.Medium;
         QualitySettings.antiAliasing = 2;
         Mobile.Init();   // Play build: native refresh rate, back button handled by UI
+        Ads.Init();      // Play build: AdMob rewarded + Remove Ads (the web build uses WebBridge)
 
         Load();
         var url = Application.absoluteURL;
@@ -283,7 +284,7 @@ public class Game : MonoBehaviour
         Persist();
         if (!Mobile.Native) return;
         away = true;
-        if (UI.I) UI.I.Pause();
+        if (UI.I && !Ads.Showing) UI.I.Pause();   // a rewarded video takes focus too: that's not leaving
     }
     void Return()
     {

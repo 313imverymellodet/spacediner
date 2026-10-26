@@ -96,6 +96,7 @@ public class UI : MonoBehaviour
         joyBase.gameObject.SetActive(false);
 
         RefreshSound();
+        Ads.Changed += RefreshPause;
         StartCoroutine(Intro());
     }
 
@@ -546,14 +547,15 @@ public class UI : MonoBehaviour
         var b = Txt(card, body, 36, new Vector2(.5f, 1), new Vector2(0, -220), Soft, TextAnchor.MiddleCenter, 820);
         b.horizontalOverflow = HorizontalWrapMode.Wrap; b.rectTransform.sizeDelta = new Vector2(820, 160);
         float y = 150;
-        if (ad != null) Button(card, "WATCH AD: " + ad, new Vector2(.5f, 0), new Vector2(0, y + 150), new Vector2(720, 120), Gold, Ink, () => { CloseModal(); onAd(); }, out _);
+        if (ad != null) Button(card, (Mobile.Native && Ads.AdFree ? "FREE: " : "WATCH AD: ") + ad, new Vector2(.5f, 0), new Vector2(0, y + 150), new Vector2(720, 120), Gold, Ink, () => { CloseModal(); onAd(); }, out _);
         Button(card, ok, new Vector2(.5f, 0), new Vector2(cancel != null ? 180 : 0, y - (ad != null ? 10 : 0)), new Vector2(cancel != null ? 340 : 720, 120), Kit.Hex("#35C46A"), Color.white, () => { CloseModal(); onOk?.Invoke(); }, out _);
         if (cancel != null) Button(card, cancel, new Vector2(.5f, 0), new Vector2(-190, y), new Vector2(340, 120), new Color(1, 1, 1, 0.12f), Color.white, CloseModal, out _);
         modalBack = cancel != null ? (Action)CloseModal : () => { CloseModal(); onOk?.Invoke(); };   // Android back never throws away a payout
     }
 
     // ---------------- pause (Play build: HUD button, Android back, leaving the app) ----------------
-    RectTransform pauseUI; Text pauseVibe, pauseSound;
+    RectTransform pauseUI; Text pauseVibe, pauseSound, removeAdsText;
+    Button removeAdsBtn, privacyBtn;
     Action modalBack;
     public bool Paused { get; private set; }
 
@@ -599,7 +601,12 @@ public class UI : MonoBehaviour
         }, out pauseVibe);
         pauseSound.fontSize = pauseVibe.fontSize = 34;
         Button(ps, "SHARE MY DINER", new Vector2(.5f, .5f), new Vector2(0, -140), new Vector2(640, 120), Gold, Ink, () => Mobile.Share(Game.I.ShareText(), "Share Space Diner"), out _);
-        Txt(ps, "Press back again to leave the game", 28, new Vector2(.5f, .5f), new Vector2(0, -300), Soft, TextAnchor.MiddleCenter, 900);
+        // Play build: the Remove Ads pass, and Google's consent form where the law requires a way back to it
+        removeAdsBtn = Button(ps, "", new Vector2(.5f, .5f), new Vector2(-120, -300), new Vector2(400, 100), new Color(1, 1, 1, 0.12f), Gold, Ads.BuyRemoveAds, out removeAdsText);
+        removeAdsText.fontSize = 32;
+        privacyBtn = Button(ps, "PRIVACY", new Vector2(.5f, .5f), new Vector2(205, -300), new Vector2(230, 100), new Color(1, 1, 1, 0.12f), Soft, Ads.ShowPrivacyOptions, out var privacyText);
+        privacyText.fontSize = 32;
+        Txt(ps, "Press back again to leave the game", 28, new Vector2(.5f, .5f), new Vector2(0, -440), Soft, TextAnchor.MiddleCenter, 900);
         pauseUI.gameObject.SetActive(false);
     }
 
@@ -608,6 +615,13 @@ public class UI : MonoBehaviour
         if (!pauseUI) return;
         pauseSound.text = Game.I.Save.muted ? "SOUND OFF" : "SOUND ON";
         pauseVibe.text = PlayerPrefs.GetInt("haptics_off", 0) == 1 ? "VIBRATION OFF" : "VIBRATION ON";
+        bool noAds = Mobile.Native && !Ads.AdFree && Ads.CanBuyRemoveAds, privacy = Mobile.Native && Ads.PrivacyOptionsRequired;
+        removeAdsBtn.gameObject.SetActive(noAds);
+        removeAdsText.text = "NO ADS  ·  " + Ads.RemoveAdsPrice;
+        privacyBtn.gameObject.SetActive(privacy);
+        // one button alone sits in the middle
+        ((RectTransform)removeAdsBtn.transform).anchoredPosition = new Vector2(privacy ? -120 : 0, -300);
+        ((RectTransform)privacyBtn.transform).anchoredPosition = new Vector2(noAds ? 205 : 0, -300);
     }
 
     // Android back: close the open panel, else pause; back on the pause screen goes home (the game keeps its save).
@@ -667,7 +681,7 @@ public class UI : MonoBehaviour
         boostBtn.gameObject.SetActive(offer);
         if (offer)
         {
-            boostText.text = WebBridge.AdsAvailable ? "AD: 2X CASH" : "FREE 2X CASH";
+            boostText.text = WebBridge.AdsAvailable && !(Mobile.Native && Ads.AdFree) ? "AD: 2X CASH" : "FREE 2X CASH";
             boostBtn.anchoredPosition = new Vector2(40 + 160, y - 14);
             boostBtn.localScale = Vector3.one * (1f + Mathf.Sin(Time.unscaledTime * 5f) * 0.04f);
         }

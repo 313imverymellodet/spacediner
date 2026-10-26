@@ -1,6 +1,6 @@
 # Publishing Space Diner on Google Play
 
-This repo builds both the browser game (`DinerBuild` → `dist/`) and the Android app (`AndroidBuild` → `android/`). The web page's portal ads (Poki / CrazyGames), the anonymous analytics beacon and the Sign in with Base badges live in the WebGL template and are not part of the app. In the app, the rewarded-ad call sites (2× cash boost, 2× offline earnings) go through `Ads` in `unity/Assets/Scripts/Ads.cs` (`Available`, `AdFree`, `ShowRewarded`). It's a stub until AdMob and the "Remove Ads" pass are added: both flags are false, so for now the boost shows as **FREE 2X CASH** and the offline popup offers a plain collect. The rewarded buttons appear when `Ads.Available || Ads.AdFree`, and with `AdFree` the reward is granted without an ad. There are no interstitials or banners. The phone gets native pause, Android back-button handling, safe areas for notches, haptics, the share sheet, and offline earnings when you come back to the app.
+This repo builds both the browser game (`DinerBuild` → `dist/`) and the Android app (`AndroidBuild` → `android/`). The web page's portal ads (Poki / CrazyGames), the anonymous analytics beacon and the Sign in with Base badges live in the WebGL template and are not part of the app. In the app, monetization is `unity/Assets/Scripts/Ads.cs` (the same file as the other Mello Vibes games): **AdMob rewarded ads** behind Google's UMP consent form, plus a one-time **Remove Ads** purchase (`remove_ads`, $2.99) that works as an ad-free pass, so every reward is granted without a video. The pass is restored from Play after a reinstall. The rewarded offers are the game's existing ones: **2× cash for 2 minutes** (the gold boost button) and **2× offline earnings** (the WELCOME BACK popup). When no video is loaded, the boost falls back to the free, rarer 90-second version and the popup offers a plain collect. There are no interstitials or banners. **NO ADS · $2.99** and **PRIVACY** (EEA/UK only) are on the pause screen. The phone gets native pause, Android back-button handling, safe areas for notches, haptics, the share sheet, and offline earnings when you come back to the app.
 
 | | |
 |---|---|
@@ -48,9 +48,17 @@ Turn on Developer options → USB debugging on the phone, plug it in, then:
 & "C:\Program Files\Unity\Hub\Editor\6000.6.3f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe" install -r android\spacediner.apk
 ```
 
-Check: the frame rate is smooth (60 Hz+), nothing is hidden under the notch or the gesture bar, the **II** button and the **back button** pause the game (back closes the upgrades panel first, and back on the pause screen goes to the home screen), switching apps pauses the game, sound and vibration toggles in the pause menu work, **Share my diner** opens the Android share sheet, and, until the ad SDK is in, the boost says **FREE 2X CASH** with no "watch ad" buttons.
+Check: the frame rate is smooth (60 Hz+), nothing is hidden under the notch or the gesture bar, the **II** button and the **back button** pause the game (back closes the upgrades panel first, and back on the pause screen goes to the home screen), switching apps pauses the game, sound and vibration toggles in the pause menu work, **Share my diner** opens the Android share sheet. Once AdMob has a video ready, the boost reads **AD: 2X CASH** and the WELCOME BACK popup offers **WATCH AD: COLLECT 2×**. Don't tap them on your own phone with the real IDs unless it's registered as a test device.
 
 **Saves and offline earnings:** progress is saved every few seconds and whenever the app is backgrounded, so swiping the app away or Android killing it loses nothing. Leave it for 2+ minutes (home button, or swipe it away) and come back: a **WELCOME BACK** popup pays offline earnings (up to 3 hours).
+
+## Ads and Remove Ads (before the first real release)
+
+`Ads.cs` has Space Diner's real AdMob IDs (app `ca-app-pub-1440285360223827~3675397332`, rewarded unit `ca-app-pub-1440285360223827/8713643580`), and the build copies the app ID into the Google Mobile Ads settings. **Never tap your own ads** on a real-ID build: AdMob treats it as invalid traffic. To test the ad flow, add your phone as a test device in AdMob (Settings → Test devices). A new ad unit can take up to an hour to start serving, so "no fill" right after setup is normal. If an `Ads.cs` with Google's test IDs is ever back, `AndroidBuild.Release` refuses it unless you pass `-testAds`.
+
+1. AdMob app and rewarded unit: done (IDs above). Link the AdMob app to the Play listing once it's published.
+2. AdMob → Privacy & messaging → create a **GDPR** message (and a US states message) for the app, otherwise the consent form never shows.
+3. **Play Console → Monetize → Products → In-app products** → create `remove_ads`, non-consumable ("Remove Ads", $2.99). It only appears in the app after a build has been uploaded to a testing track and the tester installed it from Play.
 
 ## 3. Play Console
 
@@ -71,11 +79,11 @@ Create the app at <https://play.google.com/console> → **Create app** → name 
 | Section | Answer |
 |---|---|
 | Privacy policy | `https://play.mellovibes.io/privacy` |
-| Ads | TBD (ads being added) |
+| Ads | **Yes** (AdMob rewarded ads; no interstitials or banners) |
 | App access | All functionality is available without special access |
 | Content rating (IARC questionnaire) | Everyone (no violence, no gambling, no user interaction) |
 | Target audience | 13 and over (simplest; avoids the Families program paperwork) |
-| Data safety | TBD (ads being added) |
+| Data safety | Advertising ID, approximate location, app interactions and diagnostics are **collected and shared with Google AdMob for advertising**. Encrypted in transit. No account creation. Saves stay on the device. |
 | Government / financial / health / news | No |
 
 **Release:**
