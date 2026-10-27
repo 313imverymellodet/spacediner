@@ -294,7 +294,7 @@ public class Game : MonoBehaviour
     }
 
     public string ShareText() =>
-        "My diner on " + PlanetName + " makes " + Kit.Money(Math.Max(0, IncomePerMin)) + " a minute in Space Diner! " +
+        "My diner on " + PlanetName + " makes " + Kit.Money(Math.Max(0, IncomePerMin)) + " a minute in Milky Space Diner! " +
         (Application.platform == RuntimePlatform.IPhonePlayer ? "https://spacediner.vercel.app" : "https://play.google.com/store/apps/details?id=com.mellovibes.spacediner");
 
     public void SavePad(string id, double paid)

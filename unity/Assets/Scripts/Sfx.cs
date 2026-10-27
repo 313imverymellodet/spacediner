@@ -25,9 +25,12 @@ public class Sfx : MonoBehaviour
         music.loop = true; music.volume = 0.32f; music.playOnAwake = false;
         Build();
         music.clip = Music();
+        music.mute = MusicOff;
     }
 
     public void SetMuted(bool m) { Muted = m; AudioListener.volume = m ? 0 : 1; }
+    public static bool MusicOff => PlayerPrefs.GetInt("music_off", 0) == 1;
+    public void SetMusic(bool on) { PlayerPrefs.SetInt("music_off", on ? 0 : 1); PlayerPrefs.Save(); music.mute = !on; }
     public void StartMusic() { if (!music.isPlaying) music.Play(); }
 
     void Play(AudioClip c, float vol, float pitch = 1f)

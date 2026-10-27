@@ -17,7 +17,7 @@ public static class IosBuild
 {
     // ---- per-game settings (keep in step with AndroidBuild) ----
     const string BundleId = "com.mellovibes.spacediner";
-    const string Product = "Space Diner";
+    const string Product = "Milky Space Diner";
     const string FileName = "spacediner";
     const string Version = "1.0.0";
     static void PrepareScene() => DinerBuild.Setup();

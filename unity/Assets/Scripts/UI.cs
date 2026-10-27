@@ -30,7 +30,7 @@ public class WorldTag
 
 // SPACE DINER HUD: a neon-diner look. Dark glass panels with neon rims, rolling cash, cash that flies
 // into the wallet, an objective banner with the food you need, celebration banners for every unlock.
-public class UI : MonoBehaviour
+public partial class UI : MonoBehaviour
 {
     public static UI I;
     Canvas canvas; CanvasScaler scaler;
@@ -54,7 +54,7 @@ public class UI : MonoBehaviour
     HudBar expBar, questBar;
     float moneyPunch, questPunch, objShown; double shownMoney;
     string lastHint;
-    public bool Blocking => modal != null && modalBlocks || Paused;
+    public bool Blocking => modal != null && modalBlocks || Paused || TitleUp;
     bool modalBlocks;
     RectTransform modal;
 
@@ -98,7 +98,7 @@ public class UI : MonoBehaviour
 
         RefreshSound();
         Ads.Changed += RefreshPause;
-        StartCoroutine(Intro());
+        if (Mobile.Native) ShowTitle(); else StartCoroutine(Intro());   // phones get a title screen; the web build drops straight in
     }
 
     // ---------------- building blocks ----------------
@@ -562,7 +562,7 @@ public class UI : MonoBehaviour
 
     public void Pause()
     {
-        if (Paused) return;
+        if (Paused || TitleUp) return;   // the title screen already holds the game
         Paused = true;
         Time.timeScale = 0f;
         AudioListener.pause = true;
@@ -601,7 +601,7 @@ public class UI : MonoBehaviour
             Mobile.Vibrate(30); RefreshPause();
         }, out pauseVibe);
         pauseSound.fontSize = pauseVibe.fontSize = 34;
-        Button(ps, "SHARE MY DINER", new Vector2(.5f, .5f), new Vector2(0, -140), new Vector2(640, 120), Gold, Ink, () => Mobile.Share(Game.I.ShareText(), "Share Space Diner"), out _);
+        Button(ps, "SHARE MY DINER", new Vector2(.5f, .5f), new Vector2(0, -140), new Vector2(640, 120), Gold, Ink, () => Mobile.Share(Game.I.ShareText(), "Share Milky Space Diner"), out _);
         // phone builds: the Remove Ads pass, App Store restore, and Google's consent form where the law requires a way back to it
         removeAdsBtn = Button(ps, "", new Vector2(.5f, .5f), new Vector2(0, -300), new Vector2(360, 100), new Color(1, 1, 1, 0.12f), Gold, Ads.BuyRemoveAds, out removeAdsText);
         restoreBtn = Button(ps, "RESTORE", new Vector2(.5f, .5f), new Vector2(0, -300), new Vector2(230, 100), new Color(1, 1, 1, 0.12f), Soft, Ads.RestorePurchases, out var restoreText);
@@ -643,6 +643,7 @@ public class UI : MonoBehaviour
     void Update()
     {
         if (Mobile.Native && Input.GetKeyDown(KeyCode.Escape)) Back();
+        if (titleUI) titleUI.SetAsLastSibling();   // stays above the welcome-back card until PLAY
         float aspect = (float)Screen.width / Mathf.Max(1, Screen.height);
         scaler.matchWidthOrHeight = aspect > 0.75f ? 1f : 0f;
         // landscape: the canvas matches height, so scale the HUD up to a comfortable size
