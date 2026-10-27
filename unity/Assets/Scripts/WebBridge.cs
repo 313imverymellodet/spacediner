@@ -28,7 +28,7 @@ public class WebBridge : MonoBehaviour
 #if UNITY_WEBGL && !UNITY_EDITOR
             return SD_AdsAvailable() == 1;
 #else
-            return !Mobile.Native || Ads.Available || Ads.AdFree;   // Play build: rewarded ads, or the Remove Ads pass
+            return !Mobile.Native || Ads.Available || Ads.AdFree;   // phone builds: rewarded ads, or the Remove Ads pass
 #endif
         }
     }
@@ -39,7 +39,7 @@ public class WebBridge : MonoBehaviour
         Sfx.I.SetMuted(true);
 #if UNITY_WEBGL && !UNITY_EDITOR
         SD_Rewarded(gameObject.name);
-#elif UNITY_ANDROID && !UNITY_EDITOR
+#elif (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
         Ads.ShowRewarded(ok => OnRewarded(ok ? "1" : "0"));
 #else
         OnRewarded("1");

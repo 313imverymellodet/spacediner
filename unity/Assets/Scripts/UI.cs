@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -555,7 +556,7 @@ public class UI : MonoBehaviour
 
     // ---------------- pause (Play build: HUD button, Android back, leaving the app) ----------------
     RectTransform pauseUI; Text pauseVibe, pauseSound, removeAdsText;
-    Button removeAdsBtn, privacyBtn;
+    Button removeAdsBtn, restoreBtn, privacyBtn;
     Action modalBack;
     public bool Paused { get; private set; }
 
@@ -601,12 +602,12 @@ public class UI : MonoBehaviour
         }, out pauseVibe);
         pauseSound.fontSize = pauseVibe.fontSize = 34;
         Button(ps, "SHARE MY DINER", new Vector2(.5f, .5f), new Vector2(0, -140), new Vector2(640, 120), Gold, Ink, () => Mobile.Share(Game.I.ShareText(), "Share Space Diner"), out _);
-        // Play build: the Remove Ads pass, and Google's consent form where the law requires a way back to it
-        removeAdsBtn = Button(ps, "", new Vector2(.5f, .5f), new Vector2(-120, -300), new Vector2(400, 100), new Color(1, 1, 1, 0.12f), Gold, Ads.BuyRemoveAds, out removeAdsText);
-        removeAdsText.fontSize = 32;
-        privacyBtn = Button(ps, "PRIVACY", new Vector2(.5f, .5f), new Vector2(205, -300), new Vector2(230, 100), new Color(1, 1, 1, 0.12f), Soft, Ads.ShowPrivacyOptions, out var privacyText);
-        privacyText.fontSize = 32;
-        Txt(ps, "Press back again to leave the game", 28, new Vector2(.5f, .5f), new Vector2(0, -440), Soft, TextAnchor.MiddleCenter, 900);
+        // phone builds: the Remove Ads pass, App Store restore, and Google's consent form where the law requires a way back to it
+        removeAdsBtn = Button(ps, "", new Vector2(.5f, .5f), new Vector2(0, -300), new Vector2(360, 100), new Color(1, 1, 1, 0.12f), Gold, Ads.BuyRemoveAds, out removeAdsText);
+        restoreBtn = Button(ps, "RESTORE", new Vector2(.5f, .5f), new Vector2(0, -300), new Vector2(230, 100), new Color(1, 1, 1, 0.12f), Soft, Ads.RestorePurchases, out var restoreText);
+        privacyBtn = Button(ps, "PRIVACY", new Vector2(.5f, .5f), new Vector2(0, -300), new Vector2(230, 100), new Color(1, 1, 1, 0.12f), Soft, Ads.ShowPrivacyOptions, out var privacyText);
+        removeAdsText.fontSize = restoreText.fontSize = privacyText.fontSize = 30;
+        if (Application.platform == RuntimePlatform.Android) Txt(ps, "Press back again to leave the game", 28, new Vector2(.5f, .5f), new Vector2(0, -440), Soft, TextAnchor.MiddleCenter, 900);
         pauseUI.gameObject.SetActive(false);
     }
 
@@ -615,13 +616,19 @@ public class UI : MonoBehaviour
         if (!pauseUI) return;
         pauseSound.text = Game.I.Save.muted ? "SOUND OFF" : "SOUND ON";
         pauseVibe.text = PlayerPrefs.GetInt("haptics_off", 0) == 1 ? "VIBRATION OFF" : "VIBRATION ON";
-        bool noAds = Mobile.Native && !Ads.AdFree && Ads.CanBuyRemoveAds, privacy = Mobile.Native && Ads.PrivacyOptionsRequired;
-        removeAdsBtn.gameObject.SetActive(noAds);
+        removeAdsBtn.gameObject.SetActive(Mobile.Native && !Ads.AdFree && Ads.CanBuyRemoveAds);
         removeAdsText.text = "NO ADS  ·  " + Ads.RemoveAdsPrice;
-        privacyBtn.gameObject.SetActive(privacy);
-        // one button alone sits in the middle
-        ((RectTransform)removeAdsBtn.transform).anchoredPosition = new Vector2(privacy ? -120 : 0, -300);
-        ((RectTransform)privacyBtn.transform).anchoredPosition = new Vector2(noAds ? 205 : 0, -300);
+        restoreBtn.gameObject.SetActive(Mobile.Native && Ads.ShowRestoreButton);
+        privacyBtn.gameObject.SetActive(Mobile.Native && Ads.PrivacyOptionsRequired);
+        // spread whichever of NO ADS / RESTORE / PRIVACY are showing across one row
+        var row = new[] { removeAdsBtn, restoreBtn, privacyBtn }.Where(b => b.gameObject.activeSelf).ToArray();
+        float x = -(row.Sum(b => ((RectTransform)b.transform).sizeDelta.x) + 20 * (row.Length - 1)) / 2;
+        foreach (var b in row)
+        {
+            var rt = (RectTransform)b.transform;
+            rt.anchoredPosition = new Vector2(x + rt.sizeDelta.x / 2, -300);
+            x += rt.sizeDelta.x + 20;
+        }
     }
 
     // Android back: close the open panel, else pause; back on the pause screen goes home (the game keeps its save).
