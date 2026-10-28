@@ -123,7 +123,8 @@ Data collection: **Yes**, by the AdMob SDK and RevenueCat:
 ## Required images
 | Asset | Size | Count |
 |---|---|---|
-| 6.9" iPhone screenshots | 1320 × 2868 | 3–10: `store/app-store/iphone-6.9/` (5) |
+| iPhone with Dynamic Island (medium, 6.1"/6.3") screenshots | 1206 × 2622 | `store/app-store/iphone-6.3/` (5): the slot App Store Connect asks for |
+| 6.9" iPhone screenshots (if a 6.9" slot is shown) | 1320 × 2868 | `store/app-store/iphone-6.9/` (5) |
 | 13" iPad screenshots | 2064 × 2752 | not needed: version 1.0 is iPhone-only (iPads run it in iPhone mode) |
 | App preview video, iPhone | 886 × 1920, 15–30 s | `store/app-store/preview-iphone-886x1920.mp4` (25 s) |
 | Product page header (video) | 3840 × 1646 (21:9), 5–30 s | `store/app-store/header-3840x1646.mp4` (14 s loop with music) |
