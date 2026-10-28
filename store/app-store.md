@@ -28,7 +28,7 @@ Grill, serve, launch to Mars!
 Run the only burger joint on the Moon! Fling food across the diner in zero-G, hire alien staff and launch your restaurant to Mars. Claim a daily reward every day.
 ```
 
-**Description** (1,833/4,000)
+**Description** (1,826/4,000)
 ```
 Run the only burger joint on the Moon.
 
@@ -57,7 +57,7 @@ COME BACK EVERY DAY
 
 A COZY SPACE LOUNGE
 • A chill lounge-jazz soundtrack, cheerful jingles and satisfying cash sounds
-• Bright, chunky cartoon style that's easy to read on any iPhone or iPad
+• Bright, chunky cartoon style that's easy to read on any iPhone
 
 MADE FOR PHONES
 • Plays offline, no account needed
