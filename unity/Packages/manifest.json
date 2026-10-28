@@ -4,12 +4,14 @@
       "name": "OpenUPM",
       "url": "https://package.openupm.com",
       "scopes": [
-        "com.google.ads.mobile"
+        "com.google.ads.mobile",
+        "com.revenuecat.purchases-unity"
       ]
     }
   ],
   "dependencies": {
     "com.google.ads.mobile": "11.6.0",
+    "com.revenuecat.purchases-unity": "9.16.0",
     "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.animation": "1.0.0",
     "com.unity.modules.audio": "1.0.0",
