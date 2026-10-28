@@ -1,6 +1,7 @@
 using UnityEngine;
 
-// Synthesized SFX + a lo-fi music loop. No audio files shipped.
+// Synthesized SFX and a lo-fi music loop, replaced by the recorded jingles, UI sounds and music in Resources/Audio
+// where those files exist.
 public class Sfx : MonoBehaviour
 {
     public static Sfx I;
@@ -25,7 +26,9 @@ public class Sfx : MonoBehaviour
         music.loop = true; music.volume = 0.32f; music.playOnAwake = false;
         Build();
         LoadRecorded();
-        music.clip = Music();
+        // the recorded lounge-jazz loop (Resources/Audio/music_diner.wav); the synthesized lo-fi loop if it's missing
+        var track = Resources.Load<AudioClip>("Audio/music_diner");
+        music.clip = track != null ? track : Music();
         music.mute = MusicOff;
     }
 
