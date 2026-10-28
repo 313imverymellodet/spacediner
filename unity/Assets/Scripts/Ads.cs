@@ -30,7 +30,7 @@ public static class Ads
     public const string RemoveAdsProduct = "remove_ads";   // Play Console and App Store Connect: non-consumable
     // RevenueCat public SDK keys (app.revenuecat.com → project → API keys: "appl_..." / "goog_..."). Only games built
     // with MV_REVENUECAT read them; an empty key keeps that platform on Unity IAP.
-    public const string RevenueCatAppleKey = "";
+    public const string RevenueCatAppleKey = "appl_ptTClOnDBRtjTrONqtpCsHmrfNI";
     public const string RevenueCatGoogleKey = "";
     public const string RemoveAdsEntitlement = "no_ads";   // the RevenueCat entitlement remove_ads unlocks
 
