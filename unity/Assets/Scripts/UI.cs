@@ -660,6 +660,7 @@ public partial class UI : MonoBehaviour
         if (Mobile.Native && Input.GetKeyDown(KeyCode.Escape)) Back();
         if (titleUI) titleUI.SetAsLastSibling();   // stays above the welcome-back card until PLAY
         if (modal && modal.gameObject.activeSelf == TitleUp) modal.gameObject.SetActive(!TitleUp);   // ...which waits, hidden, behind it
+        if (fx.gameObject.activeSelf == TitleUp) fx.gameObject.SetActive(!TitleUp);   // celebrations and toasts too
         float aspect = (float)Screen.width / Mathf.Max(1, Screen.height);
         scaler.matchWidthOrHeight = aspect > 0.75f ? 1f : 0f;
         // landscape: the canvas matches height, so scale the HUD up to a comfortable size

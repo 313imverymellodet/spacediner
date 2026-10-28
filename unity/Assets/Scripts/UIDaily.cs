@@ -22,8 +22,7 @@ public partial class UI
             Color ink = i == day ? Ink : Color.white;
             var tile = PanelBox(card, new Vector2(.5f, 1), pos, size, i == day ? Color.white : Kit.A(Violet, 0.5f), 1f, fill);
             Txt(tile, "DAY " + (i + 1), 28, new Vector2(.5f, .5f), new Vector2(0, big ? 44 : 52), Kit.A(ink, 0.8f));
-            var amt = Txt(tile, Kit.Money(amounts[i]), big ? 52 : 44, new Vector2(.5f, .5f), new Vector2(0, big ? 0 : 0), ink, TextAnchor.MiddleCenter, size.x);
-            if (i == day) Shadow(amt, 2);
+            Txt(tile, Kit.Money(amounts[i]), big ? 52 : 44, new Vector2(.5f, .5f), new Vector2(0, big ? 0 : 0), ink, TextAnchor.MiddleCenter, size.x);
             if (big) Txt(tile, bonus, 26, new Vector2(.5f, .5f), new Vector2(0, -46), Kit.A(ink, 0.85f), TextAnchor.MiddleCenter, 760);
             else if (i < day) Txt(tile, "CLAIMED", 24, new Vector2(.5f, .5f), new Vector2(0, -54), Kit.A(Green, 1f));
             if (i == day) todayTile = tile;
