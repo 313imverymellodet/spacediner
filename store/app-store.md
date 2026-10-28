@@ -123,8 +123,7 @@ Data collection: **Yes**, by the AdMob SDK and RevenueCat:
 ## Required images
 | Asset | Size | Count |
 |---|---|---|
-| 6.9" iPhone screenshots | 1320 × 2868 | 3–10 (we're shipping 5) |
-| 13" iPad screenshots | 2064 × 2752 | 3–10 (we're shipping 5) |
-| App preview video, iPhone | 886 × 1920, 15–30 s | optional, up to 3 |
-| App preview video, iPad | 1200 × 1600, 15–30 s | optional |
+| 6.9" iPhone screenshots | 1320 × 2868 | 3–10: `store/app-store/iphone-6.9/` (5) |
+| 13" iPad screenshots | 2064 × 2752 | not needed: version 1.0 is iPhone-only (iPads run it in iPhone mode) |
+| App preview video, iPhone | 886 × 1920, 15–30 s | `store/app-store/preview-iphone-886x1920.mp4` (25 s) |
 | App icon | 1024 × 1024 | comes from the build |

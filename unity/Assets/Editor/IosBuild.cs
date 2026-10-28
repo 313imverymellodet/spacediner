@@ -42,7 +42,9 @@ public static class IosBuild
         bool sim = HasArg("-simulator");
         PlayerSettings.iOS.sdkVersion = sim ? iOSSdkVersion.SimulatorSDK : iOSSdkVersion.DeviceSDK;
         if (sim) PlayerSettings.iOS.simulatorSdkArchitecture = AppleMobileArchitectureSimulator.ARM64;   // Apple silicon Macs
-        PlayerSettings.iOS.targetDevice = iOSTargetDevice.iPhoneAndiPad;
+        // iPhone only for 1.0 (no iPad screenshots yet); iPads run it in iPhone mode. iPad support can be added in an update,
+        // but once an app ships for iPad it can't be removed again.
+        PlayerSettings.iOS.targetDevice = iOSTargetDevice.iPhoneOnly;
         PlayerSettings.iOS.requiresFullScreen = true;   // portrait-only on iPad too
         PlayerSettings.iOS.appInBackgroundBehavior = iOSAppInBackgroundBehavior.Suspend;
         PlayerSettings.SetScriptingBackend(NamedBuildTarget.iOS, ScriptingImplementation.IL2CPP);
