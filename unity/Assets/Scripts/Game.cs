@@ -935,7 +935,7 @@ public class Game : MonoBehaviour
             double reward = cur.reward * PlanetMult;
             Save.quest++;
             Cash.Deposit(reward, Player.transform.position + Vector3.up * 3f);
-            Sfx.I.LevelUp();
+            Sfx.I.Quest();
             UI.I.Celebrate("QUEST COMPLETE", "+" + Kit.Money(reward), QuestText, Kit.Hex("#FFC93C"));
             UI.I.PunchQuest();
             WebBridge.Event("quest_" + Save.quest);
@@ -1176,7 +1176,7 @@ public class Game : MonoBehaviour
         launching = false;
         BuildWorld(true);
         Cam.transform.position = Player.transform.position + new Vector3(0, 30, -20);
-        Sfx.I.Unlock();
+        Sfx.I.Launch();
         UI.I.Celebrate("NEW PLANET", P.name, "New menu: " + Items.Name(P.a) + ", " + Items.Name(P.b) + " & " + Items.Name(P.c) + ". Everything earns 4x", P.rim, UI.Icon(P.a));
     }
 

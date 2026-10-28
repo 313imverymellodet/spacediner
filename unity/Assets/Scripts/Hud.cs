@@ -123,6 +123,27 @@ public static class HudArt
         }
     }
 
+    // a cog for the settings button: 8 teeth around a ring, anti-aliased
+    static Sprite gear;
+    public static Sprite Gear
+    {
+        get
+        {
+            if (gear) return gear;
+            int n = 64; var t = Tex(n, n); var px = new Color[n * n];
+            for (int y = 0; y < n; y++) for (int x = 0; x < n; x++)
+            {
+                float dx = x + .5f - n / 2f, dy = y + .5f - n / 2f, r = Mathf.Sqrt(dx * dx + dy * dy), ang = Mathf.Atan2(dy, dx);
+                float tooth = Mathf.Clamp01((Mathf.Cos(ang * 8f) - 0.25f) * 3f);   // 1 on a tooth, 0 between
+                float outer = Mathf.Lerp(23f, 30f, tooth);
+                float a = Mathf.Clamp01(outer - r + .5f) * Mathf.Clamp01(r - 10f + .5f);
+                px[y * n + x] = new Color(1, 1, 1, a);
+            }
+            t.SetPixels(px); t.Apply();
+            return gear = Sprite.Create(t, new Rect(0, 0, n, n), new Vector2(.5f, .5f));
+        }
+    }
+
     // a soft vertical band for shine sweeps
     public static Sprite Shine
     {

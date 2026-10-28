@@ -28,7 +28,7 @@ public class WorldTag
     public void Destroy() { Alive = false; if (Rt) UnityEngine.Object.Destroy(Rt.gameObject); }
 }
 
-// SPACE DINER HUD: a neon-diner look. Dark glass panels with neon rims, rolling cash, cash that flies
+// MILKY SPACE DINER HUD: chunky cartoon pills and cards with white rims, 3D buttons, rolling cash, cash that flies
 // into the wallet, an objective banner with the food you need, celebration banners for every unlock.
 public partial class UI : MonoBehaviour
 {
@@ -37,7 +37,7 @@ public partial class UI : MonoBehaviour
     RectTransform root, safe, hud, tagLayer, fx;
     Font F => Kit.Font;
 
-    public static readonly Color Panel = new Color(0.06f, 0.06f, 0.15f, 0.9f), Ink = Kit.Hex("#1b1d2e"),
+    public static readonly Color Panel = new Color(0.17f, 0.11f, 0.31f, 0.94f), Ink = Kit.Hex("#2b1d4f"),
         Gold = Kit.Hex("#ffc93c"), Mint = Kit.Hex("#4de8c2"), Green = Kit.Hex("#7cff8a"), Pink = Kit.Hex("#ff5c8a"),
         Orange = Kit.Hex("#ff7a59"), Violet = Kit.Hex("#9b7cff"), Soft = new Color(1, 1, 1, 0.62f);
 
@@ -89,8 +89,8 @@ public partial class UI : MonoBehaviour
         fx = Fill("fx", root);
 
         joyBase = (RectTransform)Img(root, HudArt.RingS, Vector2.zero, Vector2.zero, new Vector2(JoyRadius * 2.2f, JoyRadius * 2.2f)).transform;
-        joyBase.GetComponent<Image>().color = new Color(1, 1, 1, 0.45f);
-        var jg = Img(joyBase, HudArt.Disc, new Vector2(.5f, .5f), Vector2.zero, new Vector2(JoyRadius * 2f, JoyRadius * 2f)); jg.color = new Color(0.06f, 0.06f, 0.15f, 0.12f);
+        joyBase.GetComponent<Image>().color = new Color(1, 1, 1, 0.85f);
+        var jg = Img(joyBase, HudArt.Disc, new Vector2(.5f, .5f), Vector2.zero, new Vector2(JoyRadius * 2f, JoyRadius * 2f)); jg.color = new Color(1, 1, 1, 0.22f);
         joyKnob = (RectTransform)Img(joyBase, HudArt.Disc, new Vector2(.5f, .5f), Vector2.zero, new Vector2(112, 112)).transform;
         joyKnob.GetComponent<Image>().color = new Color(1, 1, 1, 0.9f);
         var kr = Img(joyKnob, HudArt.RingS, new Vector2(.5f, .5f), Vector2.zero, new Vector2(112, 112)); kr.color = Kit.A(Pink, 0.75f);
@@ -98,7 +98,10 @@ public partial class UI : MonoBehaviour
 
         RefreshSound();
         Ads.Changed += RefreshPause;
-        if (Mobile.Native) ShowTitle(); else StartCoroutine(Intro());   // phones get a title screen; the web build drops straight in
+        bool wasAdFree = Ads.AdFree;
+        Ads.Changed += () => { if (!wasAdFree && Ads.AdFree) Sfx.I.Confirm(); wasAdFree = Ads.AdFree; };
+        // phones get a title screen; the web build drops straight in (local dev builds can preview it with ?dev=1&title=1)
+        if (Mobile.Native || Game.I.Dev && Application.absoluteURL.Contains("title=1")) ShowTitle(); else StartCoroutine(Intro());
     }
 
     // ---------------- building blocks ----------------
@@ -123,18 +126,21 @@ public partial class UI : MonoBehaviour
     {
         var rt = Fill("s", p); rt.offsetMin = new Vector2(inset, inset); rt.offsetMax = new Vector2(-inset, -inset);
         var i = rt.gameObject.AddComponent<Image>(); i.sprite = s; i.type = Image.Type.Sliced; i.color = c; i.raycastTarget = false;
+        i.pixelsPerUnitMultiplier = 0.5f;   // chunky rounded corners and a thick rim
         return i;
     }
 
-    // A dark glass panel with a drop shadow and a neon rim.
-    RectTransform PanelBox(Transform p, Vector2 anchor, Vector2 pos, Vector2 size, Color rim, float alpha = 0.9f)
+    // A solid card with a drop shadow and a thick rim that leans white (children: shadow, fill, rim).
+    RectTransform PanelBox(Transform p, Vector2 anchor, Vector2 pos, Vector2 size, Color rim, float alpha = 0.9f, Color? fill = null)
     {
         var rt = Rect("panel", p, anchor, pos, size);
-        var sh = Sliced(rt, HudArt.Round, new Color(0, 0, 0, 0.32f), -6); sh.rectTransform.anchoredPosition = new Vector2(0, -6);
-        Sliced(rt, HudArt.Round, Kit.A(Panel, alpha));
-        Sliced(rt, HudArt.Rim, rim);
+        var sh = Sliced(rt, HudArt.Round, new Color(0, 0, 0, 0.26f), -2); sh.rectTransform.anchoredPosition = new Vector2(0, -9);
+        Sliced(rt, HudArt.Round, fill ?? Kit.A(Panel, alpha));
+        Sliced(rt, HudArt.Rim, Color.Lerp(Kit.A(rim, 1f), Color.white, 0.6f));
         return rt;
     }
+
+    static Color Shade(Color c, float k) => new Color(c.r * k, c.g * k, c.b * k, c.a);
 
     Image Img(Transform p, Sprite s, Vector2 anchor, Vector2 pos, Vector2 size)
     {
@@ -160,9 +166,11 @@ public partial class UI : MonoBehaviour
     {
         // shadow, face and gloss are all children so the shadow sits under the face (a parent Image would draw first)
         var rt = Rect("btn", p, anchor, pos, size);
-        var sh = Sliced(rt, HudArt.Round, new Color(0, 0, 0, 0.3f), -3); sh.rectTransform.anchoredPosition = new Vector2(0, -7);
+        bool solid = bg.a > 0.5f;   // see-through buttons (on dark overlays) keep a soft shadow instead of a 3D base
+        var sh = Sliced(rt, HudArt.Round, solid ? Shade(bg, 0.68f) : new Color(0, 0, 0, 0.3f), solid ? 0 : -3);
+        sh.rectTransform.anchoredPosition = new Vector2(0, solid ? -10 : -7);
         var img = Sliced(rt, HudArt.Round, bg); img.raycastTarget = true;
-        Sliced(rt, HudArt.GlossRound, new Color(1, 1, 1, 0.55f));
+        Sliced(rt, HudArt.GlossRound, new Color(1, 1, 1, 0.45f));
         var b = rt.gameObject.AddComponent<Button>();
         b.targetGraphic = img;
         b.onClick.AddListener(() => { Sfx.I.Click(); WebBridge.Vibrate(10); onClick(); });
@@ -175,38 +183,42 @@ public partial class UI : MonoBehaviour
     void BuildHud()
     {
         // wallet: cash + income rate
-        wallet = PanelBox(hud, new Vector2(0, 1), new Vector2(40 + 190, -72), new Vector2(380, 112), Kit.A(Green, 0.38f));
-        var wg = Img(wallet, HudArt.Glow, new Vector2(0, .5f), new Vector2(64, 4), new Vector2(150, 150)); wg.color = Kit.A(Green, 0.18f);
+        wallet = PanelBox(hud, new Vector2(0, 1), new Vector2(40 + 170, -72), new Vector2(340, 112), Color.white, 1f, Kit.Hex("#35C46A"));
         walletIcon = (RectTransform)Img(wallet, Kit.CashSprite, new Vector2(0, .5f), new Vector2(64, 4), new Vector2(84, 44)).transform;
         walletIcon.localRotation = Quaternion.Euler(0, 0, 10);
         moneyText = Txt(wallet, "0", 56, new Vector2(0, .5f), new Vector2(124, 14), Color.white, TextAnchor.MiddleLeft, 260);
         moneyText.rectTransform.pivot = new Vector2(0, .5f); Shadow(moneyText, 2);
-        rateText = Txt(wallet, "", 26, new Vector2(0, .5f), new Vector2(126, -30), Kit.A(Green, 0.95f), TextAnchor.MiddleLeft, 260);
+        rateText = Txt(wallet, "", 26, new Vector2(0, .5f), new Vector2(126, -30), Kit.A(Color.white, 0.92f), TextAnchor.MiddleLeft, 260);
         rateText.rectTransform.pivot = new Vector2(0, .5f);
 
         // planet + diner expansion
-        planetPanel = PanelBox(hud, new Vector2(.5f, 1), new Vector2(0, -72), new Vector2(400, 112), Kit.A(Pink, 0.4f));
+        planetPanel = PanelBox(hud, new Vector2(1, 1), new Vector2(-40 - 170, -72), new Vector2(340, 112), Color.white, 1f, Violet);
         planetRim = planetPanel.GetComponentsInChildren<Image>()[2];
-        planetText = Txt(planetPanel, "", 34, new Vector2(.5f, 1), new Vector2(0, -32), Color.white, TextAnchor.MiddleCenter, 380); Shadow(planetText, 2);
-        expBar = new HudBar(planetPanel, new Vector2(.5f, 0), new Vector2(0, 28), new Vector2(330, 22), Pink, Kit.Hex("#ffd0de"), 0, 0, F);
-        expText = Txt(planetPanel, "", 24, new Vector2(.5f, 0), new Vector2(0, 54), Kit.A(Pink, 0.95f), TextAnchor.MiddleCenter, 380);
+        planetText = Txt(planetPanel, "", 34, new Vector2(.5f, 1), new Vector2(0, -32), Color.white, TextAnchor.MiddleCenter, 320); Shadow(planetText, 2);
+        expBar = new HudBar(planetPanel, new Vector2(.5f, 0), new Vector2(0, 28), new Vector2(280, 22), Pink, Kit.Hex("#ffd0de"), 0, 0, F);
+        expText = Txt(planetPanel, "", 24, new Vector2(.5f, 0), new Vector2(0, 54), Kit.A(Color.white, 0.9f), TextAnchor.MiddleCenter, 320);
 
-        // sound
-        soundBtn = (RectTransform)Button(hud, "", new Vector2(1, 1), new Vector2(-92, -72), new Vector2(124, 112), Kit.A(Panel, 0.95f), Color.white, () =>
+        // under the planet pill: a gear (phones: pause + settings) or the sound toggle (browser)
+        soundBtn = (RectTransform)Button(hud, "", new Vector2(1, 1), new Vector2(-40 - 62, -204), new Vector2(124, 100), Color.white, Ink, () =>
         {
             Game.I.Save.muted = !Game.I.Save.muted; Sfx.I.SetMuted(Game.I.Save.muted); RefreshSound();
         }, out soundText).transform;
         soundText.fontSize = 26;
-        if (Mobile.Native) Button(hud, "II", new Vector2(1, 1), new Vector2(-232, -72), new Vector2(124, 112), Kit.A(Panel, 0.95f), Color.white, Pause, out _);
+        soundBtn.gameObject.SetActive(!Mobile.Native);
+        if (Mobile.Native)
+        {
+            var gear = Button(hud, "", new Vector2(1, 1), new Vector2(-40 - 52, -204), new Vector2(104, 100), Color.white, Ink, Pause, out _);
+            Img(gear.transform, HudArt.Gear, new Vector2(.5f, .5f), new Vector2(0, 2), new Vector2(62, 62)).color = Violet;
+        }
 
         // quest card
-        questCard = PanelBox(hud, new Vector2(0, 1), new Vector2(40 + 240, -214), new Vector2(480, 128), Kit.A(Gold, 0.32f));
-        var qs = Img(questCard, null, new Vector2(0, .5f), new Vector2(14, 0), new Vector2(8, 96)); qs.color = Gold; qs.preserveAspect = false;
-        Txt(questCard, "QUEST", 24, new Vector2(0, 1), new Vector2(36 + 60, -26), Gold, TextAnchor.MiddleLeft, 200).rectTransform.pivot = new Vector2(0, .5f);
-        questText = Txt(questCard, "", 32, new Vector2(0, .5f), new Vector2(36, 6), Color.white, TextAnchor.MiddleLeft, 430);
+        questCard = PanelBox(hud, new Vector2(0, 1), new Vector2(40 + 240, -214), new Vector2(480, 128), Color.white, 1f, Color.white);
+        var qs = Img(questCard, null, new Vector2(0, .5f), new Vector2(16, 0), new Vector2(8, 88)); qs.color = Pink; qs.preserveAspect = false;
+        Txt(questCard, "QUEST", 24, new Vector2(0, 1), new Vector2(36 + 60, -26), Pink, TextAnchor.MiddleLeft, 200).rectTransform.pivot = new Vector2(0, .5f);
+        questText = Txt(questCard, "", 32, new Vector2(0, .5f), new Vector2(36, 6), Ink, TextAnchor.MiddleLeft, 430);
         questText.rectTransform.pivot = new Vector2(0, .5f);
-        questBar = new HudBar(questCard, new Vector2(0, 0), new Vector2(36 + 160, 26), new Vector2(320, 20), Gold, Kit.Hex("#fff3c4"), 0, 0, F);
-        questCount = Txt(questCard, "", 24, new Vector2(1, 0), new Vector2(-24, 26), Soft, TextAnchor.MiddleRight, 120);
+        questBar = new HudBar(questCard, new Vector2(0, 0), new Vector2(36 + 160, 26), new Vector2(320, 20), Pink, Kit.Hex("#ffd0de"), 0, 0, F);
+        questCount = Txt(questCard, "", 24, new Vector2(1, 0), new Vector2(-24, 26), Kit.A(Ink, 0.6f), TextAnchor.MiddleRight, 120);
         questCount.rectTransform.pivot = new Vector2(1, .5f);
 
         // status chips (live timers)
@@ -218,12 +230,12 @@ public partial class UI : MonoBehaviour
         boostText.fontSize = 34;
 
         // objective banner (bottom): food icon or code chip + what to do
-        objective = PanelBox(hud, new Vector2(.5f, 0), new Vector2(0, 250), new Vector2(760, 104), Kit.A(Gold, 0.45f), 0.94f);
+        objective = PanelBox(hud, new Vector2(.5f, 0), new Vector2(0, 250), new Vector2(760, 104), Color.white, 1f, Color.white);
         objChip = Rect("chip", objective, new Vector2(0, .5f), new Vector2(70, 0), new Vector2(104, 76));
         objChipImg = objChip.gameObject.AddComponent<Image>(); objChipImg.sprite = HudArt.Round; objChipImg.type = Image.Type.Sliced; objChipImg.raycastTarget = false;
         objCode = Txt(objChip, "", 34, new Vector2(.5f, .5f), Vector2.zero, Ink, TextAnchor.MiddleCenter, 104);
         objIcon = Img(objChip, null, new Vector2(.5f, .5f), Vector2.zero, new Vector2(62, 62));
-        objText = Txt(objective, "", 36, new Vector2(0, .5f), new Vector2(140, 0), Color.white, TextAnchor.MiddleLeft, 600);
+        objText = Txt(objective, "", 36, new Vector2(0, .5f), new Vector2(140, 0), Ink, TextAnchor.MiddleLeft, 600);
         objText.rectTransform.pivot = new Vector2(0, .5f);
 
         // objective arrow
@@ -451,7 +463,8 @@ public partial class UI : MonoBehaviour
 
     RectTransform Modal(float h, bool blocking = true)
     {
-        CloseModal();
+        CloseModal(true);
+        Sfx.I.Open();
         modal = Fill("modal", root);
         modalBlocks = blocking;
         if (blocking) { var shade = modal.gameObject.AddComponent<Image>(); shade.color = new Color(0.02f, 0.02f, 0.08f, 0.6f); }
@@ -471,8 +484,10 @@ public partial class UI : MonoBehaviour
         while (k < 1f && r) { k += Time.unscaledDeltaTime / 0.25f; r.localScale = Vector3.one * Kit.EaseOutBack(Mathf.Clamp01(k)); yield return null; }   // the card can close mid-pop
     }
 
-    public void CloseModal()
+    public void CloseModal() => CloseModal(false);
+    void CloseModal(bool quiet)
     {
+        if (modal && !quiet) Sfx.I.Close();
         if (modal) Destroy(modal.gameObject);
         modal = null; upgrades = null; modalBack = null;
         upgradeRefresh.Clear();
@@ -660,7 +675,7 @@ public partial class UI : MonoBehaviour
         if (Math.Abs(g.Money - shownMoney) < 1) shownMoney = g.Money;
         moneyText.text = Kit.Money(shownMoney).Substring(1);
         double rate = g.IncomePerMin;
-        rateText.text = rate >= 1 ? "+" + Kit.Money(rate) + " / MIN" : "SERVE FOOD TO EARN";
+        rateText.text = rate >= 1 ? "+" + Kit.Money(rate) + " / MIN" : "SERVE TO EARN";
         moneyPunch = Mathf.MoveTowards(moneyPunch, 0, udt * 4f);
         wallet.localScale = Vector3.one * (1f + moneyPunch * 0.07f);
         walletIcon.localScale = Vector3.one * (1f + moneyPunch * 0.25f);

@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public partial class UI
 {
     RectTransform titleUI, titleSettings, titlePlay, titleBurger;
+    readonly System.Collections.Generic.List<Image> titleStars = new System.Collections.Generic.List<Image>();
     Button titleNoAds, titleSet;
     Text setSound, setMusic, setVibe;
     Button setRestore, setPrivacy;
@@ -14,7 +15,16 @@ public partial class UI
     void ShowTitle()
     {
         titleUI = Fill("title", root);
-        var shade = titleUI.gameObject.AddComponent<Image>(); shade.color = new Color(0.03f, 0.03f, 0.11f, 0.62f);
+        var shade = titleUI.gameObject.AddComponent<Image>(); shade.color = Kit.A(Kit.Hex("#1d1440"), 0.86f);
+        // a twinkling starfield over the diner
+        var rnd = new System.Random(7);
+        titleStars.Clear();
+        for (int i = 0; i < 46; i++)
+        {
+            var st = Img(titleUI, HudArt.Disc, new Vector2((float)rnd.NextDouble(), (float)rnd.NextDouble()), Vector2.zero, Vector2.one * (6 + rnd.Next(10)));
+            st.color = i % 5 == 0 ? Gold : Color.white;
+            titleStars.Add(st);
+        }
         var ts = Fill("safe", titleUI); ts.gameObject.AddComponent<SafeArea>();
 
         // logo
@@ -30,8 +40,9 @@ public partial class UI
         // buttons
         titlePlay = (RectTransform)Button(ts, "PLAY", new Vector2(.5f, .5f), new Vector2(0, -420), new Vector2(620, 190), Kit.Hex("#35C46A"), Color.white, StartGame, out var playText).transform;
         playText.fontSize = 96; Shadow(playText, 4);
-        titleSet = Button(ts, "SETTINGS", new Vector2(.5f, .5f), new Vector2(-165, -620), new Vector2(310, 120), new Color(1, 1, 1, 0.14f), Color.white, OpenSettings, out var setText);
-        setText.fontSize = 36;
+        titleSet = Button(ts, "SETTINGS", new Vector2(.5f, .5f), new Vector2(-165, -620), new Vector2(310, 120), Violet, Color.white, OpenSettings, out var setText);
+        setText.fontSize = 34; setText.rectTransform.anchoredPosition = new Vector2(26, 0);
+        Img(titleSet.transform, HudArt.Gear, new Vector2(0, .5f), new Vector2(46, 2), new Vector2(44, 44));
         titleNoAds = Button(ts, "", new Vector2(.5f, .5f), new Vector2(165, -620), new Vector2(310, 120), Gold, Ink, Ads.BuyRemoveAds, out var noAdsText);
         noAdsText.fontSize = 34;
         Txt(ts, "v" + Application.version, 24, new Vector2(.5f, 0), new Vector2(0, 40), Kit.A(Color.white, 0.35f));
@@ -64,6 +75,8 @@ public partial class UI
             milky.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.6f, 1f, Kit.EaseOutBack(Mathf.Clamp01((k - 0.2f) / 0.5f)));
             if (titleBurger) titleBurger.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(k * 3f) * 12f);
             if (titlePlay && !titleSettings) titlePlay.localScale = Vector3.one * (1f + Mathf.Sin(k * 4f) * 0.035f);
+            for (int i = 0; i < titleStars.Count; i++)
+                titleStars[i].canvasRenderer.SetAlpha(0.35f + 0.65f * Mathf.Abs(Mathf.Sin(k * (0.6f + i % 7 * 0.15f) + i)));
             yield return null;
         }
     }
@@ -94,10 +107,13 @@ public partial class UI
     void OpenSettings()
     {
         if (titleSettings) return;
+        Sfx.I.Open();
         titleSettings = Fill("settings", titleUI);
         var dim = titleSettings.gameObject.AddComponent<Image>(); dim.color = new Color(0.02f, 0.02f, 0.08f, 0.7f);
         var ss = Fill("safe", titleSettings); ss.gameObject.AddComponent<SafeArea>();
-        var card = PanelBox(ss, new Vector2(.5f, .5f), new Vector2(0, -20), new Vector2(860, 1060), Kit.A(Pink, 0.45f), 0.97f);
+        // the card fits the rows that show: RESTORE (iPhone, until the pass is owned) and PRIVACY (where the law asks for it)
+        int extra = (Ads.ShowRestoreButton ? 1 : 0) + (Ads.PrivacyOptionsRequired ? 1 : 0);
+        var card = PanelBox(ss, new Vector2(.5f, .5f), new Vector2(0, -20), new Vector2(860, 680 + extra * 130), Kit.A(Pink, 0.45f), 0.97f);
         var title = Txt(card, "SETTINGS", 64, new Vector2(.5f, 1), new Vector2(0, -90), Color.white); Shadow(title, 3);
         Button(card, "X", new Vector2(1, 1), new Vector2(-70, -74), new Vector2(84, 84), new Color(1, 1, 1, 0.1f), Color.white, CloseSettings, out _);
 
@@ -117,7 +133,7 @@ public partial class UI
         setSound.fontSize = setMusic.fontSize = setVibe.fontSize = 40;
 
         setRestore = Button(card, "RESTORE PURCHASES", new Vector2(.5f, 1), new Vector2(0, -720), new Vector2(640, 110), new Color(1, 1, 1, 0.08f), Soft, Ads.RestorePurchases, out var restoreText);
-        setPrivacy = Button(card, "PRIVACY", new Vector2(.5f, 1), new Vector2(0, -850), new Vector2(640, 110), new Color(1, 1, 1, 0.08f), Soft, Ads.ShowPrivacyOptions, out var privacyText);
+        setPrivacy = Button(card, "PRIVACY", new Vector2(.5f, 1), new Vector2(0, Ads.ShowRestoreButton ? -850 : -720), new Vector2(640, 110), new Color(1, 1, 1, 0.08f), Soft, Ads.ShowPrivacyOptions, out var privacyText);
         restoreText.fontSize = privacyText.fontSize = 32;
 
         RefreshSettings();
@@ -126,7 +142,7 @@ public partial class UI
 
     void CloseSettings()
     {
-        if (titleSettings) Destroy(titleSettings.gameObject);
+        if (titleSettings) { Sfx.I.Close(); Destroy(titleSettings.gameObject); }
         titleSettings = null;
     }
 
