@@ -23,7 +23,7 @@ public class Sfx : MonoBehaviour
         voices = new AudioSource[8];
         for (int i = 0; i < voices.Length; i++) { voices[i] = gameObject.AddComponent<AudioSource>(); voices[i].playOnAwake = false; }
         music = gameObject.AddComponent<AudioSource>();
-        music.loop = true; music.volume = 0.32f; music.playOnAwake = false;
+        music.loop = true; music.volume = 0.6f; music.playOnAwake = false;
         Build();
         LoadRecorded();
         // the recorded lounge-jazz loop (Resources/Audio/music_diner.wav); the synthesized lo-fi loop if it's missing
@@ -57,7 +57,7 @@ public class Sfx : MonoBehaviour
     public void Open() => Play(open, 0.45f);
     public void Close() => Play(close, 0.4f);
     public void Confirm() => Play(confirm, 0.55f);
-    public void MusicBoost() => music.volume = 0.42f;
+    public void MusicBoost() => music.volume = 0.72f;
     public void Rush() { Play(unlock, 0.7f, 1.25f); music.pitch = 1.12f; }
     public void RushEnd() => music.pitch = 1f;
 

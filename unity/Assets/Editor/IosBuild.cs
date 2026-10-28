@@ -38,6 +38,10 @@ public static class IosBuild
         PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, BundleId);
         PlayerSettings.iOS.buildNumber = Math.Max(1, ArgInt("-buildNumber", 1)).ToString();
         PlayerSettings.iOS.targetOSVersionString = "15.0";
+        // -simulator: an iOS Simulator build in ios/<name>-sim (for testing and App Store screenshots), never uploaded
+        bool sim = HasArg("-simulator");
+        PlayerSettings.iOS.sdkVersion = sim ? iOSSdkVersion.SimulatorSDK : iOSSdkVersion.DeviceSDK;
+        if (sim) PlayerSettings.iOS.simulatorSdkArchitecture = AppleMobileArchitectureSimulator.ARM64;   // Apple silicon Macs
         PlayerSettings.iOS.targetDevice = iOSTargetDevice.iPhoneAndiPad;
         PlayerSettings.iOS.requiresFullScreen = true;   // portrait-only on iPad too
         PlayerSettings.iOS.appInBackgroundBehavior = iOSAppInBackgroundBehavior.Suspend;
@@ -77,7 +81,7 @@ public static class IosBuild
         SetAdMobIos();
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.iOS, BuildTarget.iOS);
 
-        var outPath = Path.GetFullPath(Path.Combine(Application.dataPath, "../../ios", FileName));
+        var outPath = Path.GetFullPath(Path.Combine(Application.dataPath, "../../ios", FileName + (sim ? "-sim" : "")));
         Directory.CreateDirectory(Path.GetDirectoryName(outPath));
         var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
         {
@@ -122,6 +126,20 @@ public static class IosBuild
         plist.root.SetBoolean("ITSAppUsesNonExemptEncryption", false);   // only standard HTTPS: skips the export-compliance question
         plist.root.SetBoolean("CADisableMinimumFrameDurationOnPhone", true);   // lets ProMotion iPhones run at 120 Hz
         plist.WriteToFile(plistPath);
+
+        // branded launch screen (Unity's default is plain white): tools/launch_screen.swift draws these images, shown
+        // aspect-fill over the title screen's deep purple
+        var launch = Path.Combine(Application.dataPath, "Editor/LaunchScreen");
+        if (File.Exists(Path.Combine(launch, "launch-iphone.png")))
+        {
+            File.Copy(Path.Combine(launch, "launch-iphone.png"), Path.Combine(path, "LaunchScreen-iPhonePortrait.png"), true);
+            File.Copy(Path.Combine(launch, "launch-ipad.png"), Path.Combine(path, "LaunchScreen-iPad.png"), true);
+            foreach (var board in new[] { "LaunchScreen-iPhone.storyboard", "LaunchScreen-iPad.storyboard" })
+            {
+                var f = Path.Combine(path, board);
+                if (File.Exists(f)) File.WriteAllText(f, File.ReadAllText(f).Replace("red=\"1\" green=\"1\" blue=\"1\"", "red=\"0.114\" green=\"0.078\" blue=\"0.251\""));
+            }
+        }
 
         var projPath = PBXProject.GetPBXProjectPath(path);
         var proj = new PBXProject();

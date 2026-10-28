@@ -659,6 +659,7 @@ public partial class UI : MonoBehaviour
     {
         if (Mobile.Native && Input.GetKeyDown(KeyCode.Escape)) Back();
         if (titleUI) titleUI.SetAsLastSibling();   // stays above the welcome-back card until PLAY
+        if (modal && modal.gameObject.activeSelf == TitleUp) modal.gameObject.SetActive(!TitleUp);   // ...which waits, hidden, behind it
         float aspect = (float)Screen.width / Mathf.Max(1, Screen.height);
         scaler.matchWidthOrHeight = aspect > 0.75f ? 1f : 0f;
         // landscape: the canvas matches height, so scale the HUD up to a comfortable size
@@ -710,7 +711,7 @@ public partial class UI : MonoBehaviour
         }
 
         // objective banner: slides up when there's something to do
-        bool show = !string.IsNullOrEmpty(g.Hint) && modal == null;
+        bool show = !string.IsNullOrEmpty(g.Hint) && modal == null && !TitleUp;
         objShown = Mathf.MoveTowards(objShown, show ? 1 : 0, udt * 5f);
         objective.gameObject.SetActive(objShown > 0.01f);
         if (show && g.Hint != lastHint) { lastHint = g.Hint; objText.text = g.Hint; objective.localScale = Vector3.one * 1.06f; }
@@ -784,11 +785,14 @@ public partial class UI : MonoBehaviour
         {
             var sp = cam.WorldToScreenPoint(target.Value + Vector3.up * 1.6f);
             var rect = new Rect(90, 90, Screen.width - 180, Screen.height - 280);
-            bool inside = sp.z > 0 && rect.Contains(sp);
+            // anything actually on screen gets the bouncing pointer (kept inside the margin), not the edge arrow and its
+            // distance, which would sit on top of a pad's price near the screen edge
+            bool inside = sp.z > 0 && sp.x >= 0 && sp.x <= Screen.width && sp.y >= 0 && sp.y <= Screen.height;
             arrowRt.localScale = Vector3.one * (1f + Mathf.Sin(Time.time * 6f) * 0.08f);
             if (inside)
             {
-                arrowRt.position = sp + Vector3.up * (Mathf.Abs(Mathf.Sin(Time.time * 5f)) * 30f * canvas.scaleFactor);
+                var at = new Vector3(Mathf.Clamp(sp.x, rect.xMin, rect.xMax), Mathf.Clamp(sp.y, rect.yMin, rect.yMax), 0);
+                arrowRt.position = at + Vector3.up * (Mathf.Abs(Mathf.Sin(Time.time * 5f)) * 30f * canvas.scaleFactor);
                 arrowImg.rectTransform.localRotation = Quaternion.identity;
                 arrowDist.text = "";
             }
@@ -800,7 +804,8 @@ public partial class UI : MonoBehaviour
                 arrowRt.position = c + d * Mathf.Min(s, 1f);
                 arrowImg.rectTransform.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg + 90f);
                 var pp = Game.I.Player.transform.position; pp.y = 0; var tt = target.Value; tt.y = 0;
-                arrowDist.text = Mathf.RoundToInt(Vector3.Distance(pp, tt)) + "m";
+                float meters = Vector3.Distance(pp, tt);
+                arrowDist.text = meters >= 15f ? Mathf.RoundToInt(meters) + "m" : "";   // nearby: the arrow is enough, and a pad's price tag can sit right there
             }
         }
     }

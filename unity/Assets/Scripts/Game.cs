@@ -49,7 +49,7 @@ public class Game : MonoBehaviour
 
     static readonly Planet[] Planets =
     {
-        new Planet { name = "MOON BASE", ground = Kit.Hex("#7d8290"), ground2 = Kit.Hex("#c3c7d1"), sky = Kit.Hex("#10163a"),
+        new Planet { name = "MOON BASE", ground = Kit.Hex("#4e5470"), ground2 = Kit.Hex("#8c92ab"), sky = Kit.Hex("#10163a"),
             floorA = Kit.Hex("#e6ddcc"), floorB = Kit.Hex("#c7b89c"), line = Kit.Hex("#b3a384"), rim = Kit.Hex("#ff9a3c"), ambient = Kit.Hex("#b4bbd8"),
             a = Item.Burger, b = Item.Fries, c = Item.Soda, aName = "GRILL", bName = "FRYER", cName = "SODA" },
         new Planet { name = "MARS OUTPOST", ground = Kit.Hex("#8f3f24"), ground2 = Kit.Hex("#d9804f"), sky = Kit.Hex("#2a0e1c"),
@@ -1189,7 +1189,7 @@ public class Game : MonoBehaviour
         // ...but never let the player walk off the side of the screen
         float slack = Mathf.Max(0.5f, widthPerDist * dist - 1.4f);
         focus.x = Mathf.Clamp(focus.x, Player.transform.position.x - slack, Player.transform.position.x + slack);
-        focus.z = Mathf.Clamp(focus.z, -9f, 6.5f);
+        focus.z = Mathf.Clamp(focus.z, -9f, Mathf.Lerp(3f, 6.5f, Mathf.InverseLerp(0.46f, 1f, aspect)));
         var want = focus + new Vector3(0, 11.5f, -8.6f) * dist;
         Cam.transform.position = Vector3.Lerp(Cam.transform.position, want, 1f - Mathf.Exp(-Time.deltaTime * 6f));
         Cam.transform.rotation = Quaternion.Euler(53f, 0, 0);
