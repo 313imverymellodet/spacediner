@@ -28,7 +28,7 @@ Grill, serve, launch to Mars!
 Run the only burger joint on the Moon! Fling food across the diner in zero-G, hire alien staff and launch your restaurant to Mars. Claim a daily reward every day.
 ```
 
-**Description** (1,826/4,000)
+**Description** (1,825/4,000)
 ```
 Run the only burger joint on the Moon.
 
