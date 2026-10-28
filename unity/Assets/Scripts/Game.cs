@@ -31,6 +31,8 @@ public class SaveData
     public List<double> tipVals = new List<double>();
     public float boostLeft, boostCd = -1f, rushLeft;
     public float px, pz; public bool hasPos;
+    // daily reward: the local day it was last claimed (days since 2000-01-01, 0 = never) and that day's slot 0-6
+    public int dailyDay, dailyStreak;
 }
 
 // SPACE DINER — build and run a burger joint on the Moon, then launch to Mars and beyond.
@@ -284,12 +286,14 @@ public class Game : MonoBehaviour
         Persist();
         if (!Mobile.Native) return;
         away = true;
+        ScheduleReminders();
         if (UI.I && !Ads.Showing) UI.I.Pause();   // a rewarded video takes focus too: that's not leaving
     }
     void Return()
     {
         if (!away) return;
         away = false;
+        Mobile.CancelNotifications();
         OfflineEarnings();
     }
 
@@ -323,6 +327,60 @@ public class Game : MonoBehaviour
         else
             UI.I.Confirm("WELCOME BACK!", body, "COLLECT", () => AddMoney(amount, true));
         return true;
+    }
+
+    // ======================================================================
+    // Daily reward: a 7-day streak that pays minutes of current income (day 7 adds a 2x cash boost).
+    // Missing a day starts the streak over; after day 7 it starts again at day 1.
+    static readonly int[] DailyMinutes = { 3, 4, 5, 6, 8, 10, 15 };
+    const float DailyBoostSecs = 300f;
+    bool dailyShown;
+    static int Today => (int)(DateTime.Now.Date - new DateTime(2000, 1, 1)).TotalDays;
+    bool DailyForced => Dev && Application.absoluteURL.Contains("daily=1");   // local dev builds: preview the card
+    public bool DailyReady => DailyForced || Save.tut >= (int)TutStep.Done && Today > Save.dailyDay;
+    int DailySlot => SlotOn(Today);
+    // the streak slot a claim on that day would get: the next one if the last claim was the day before, else day 1
+    int SlotOn(int day) => Save.dailyDay > 0 && day - Save.dailyDay == 1 ? (Save.dailyStreak + 1) % 7 : 0;
+
+    double DailyAmount(int slot) => Math.Round(Math.Max(60 * PlanetMult * (slot + 1), IncomePerMin * DailyMinutes[slot]));
+
+    void OpenDaily()
+    {
+        int slot = DailySlot;
+        var amounts = new double[7];
+        for (int i = 0; i < 7; i++) amounts[i] = DailyAmount(i);
+        UI.I.OpenDaily(slot, amounts, "+ " + Mathf.RoundToInt(DailyBoostSecs / 60) + " MIN OF 2X CASH", WebBridge.AdsAvailable, doubled =>
+        {
+            if (doubled) WebBridge.I.ShowRewarded(ok => { ClaimDaily(slot, ok ? 2 : 1); if (ok) WebBridge.Event("ad_daily2x"); });
+            else ClaimDaily(slot, 1);
+        });
+    }
+
+    void ClaimDaily(int slot, int mult)
+    {
+        bool first = Save.dailyDay == 0;
+        Save.dailyDay = Today; Save.dailyStreak = slot;
+        double amount = DailyAmount(slot) * mult;
+        AddMoney(amount, true);
+        if (slot == 6) BoostLeft = Mathf.Max(BoostLeft, DailyBoostSecs);
+        Sfx.I.Quest();
+        UI.I.Celebrate("DAY " + (slot + 1) + " REWARD", "+" + Kit.Money(amount), slot == 6 ? "Streak complete! 2X cash for 5 minutes" : "Come back tomorrow for day " + (slot + 2), Kit.Hex("#FFC93C"));
+        WebBridge.Event("daily_" + (slot + 1));
+        Persist();
+        if (first) Mobile.RequestNotifications();   // asked once, right after the first reward, so the reminders make sense
+    }
+
+    // Local reminders: a full register when offline earnings hit their 3-hour cap, and the next daily reward.
+    void ScheduleReminders()
+    {
+        Mobile.CancelNotifications();
+        if (Save.tut < (int)TutStep.Done) return;
+        if (Save.rate > 0) Mobile.Notify("register", "Your register is full!", "Your " + PlanetName + " diner made 3 hours of cash while you were away. Come collect it.", 3 * 3600);
+        var now = DateTime.Now;
+        var at = now.Date.AddDays(Today > Save.dailyDay ? 0 : 1).AddHours(10);   // 10am on the day the next reward unlocks
+        if (at < now.AddMinutes(30)) at = now.Date.AddHours(19) > now.AddMinutes(30) ? now.Date.AddHours(19) : now.Date.AddDays(1).AddHours(10);
+        int next = SlotOn(Today + (at.Date - now.Date).Days);
+        Mobile.Notify("daily", "Day " + (next + 1) + " reward is ready", next == 6 ? "Claim the big one: cash plus 5 minutes of 2X CASH." : "Keep your streak going at Milky Space Diner.", (int)(at - now).TotalSeconds);
     }
 
     // ======================================================================
@@ -1080,6 +1138,7 @@ public class Game : MonoBehaviour
         if (BoostLeft > 0) BoostLeft = Mathf.Max(0, BoostLeft - dt);
         else boostCooldown -= dt;
         UpdateRush(dt);
+        if (!dailyShown && DailyReady && !UI.I.Blocking && !launching) { dailyShown = true; OpenDaily(); }
         UpdateQuest();
 
         AdaptQuality();
