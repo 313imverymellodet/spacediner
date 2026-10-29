@@ -1,0 +1,5 @@
+Jingles and interface sounds by Kenney (www.kenney.nl): "Music Jingles" and "Interface Sounds".
+License: Creative Commons Zero (CC0) http://creativecommons.org/publicdomain/zero/1.0/
+
+music_diner.wav: generated for Milky Space Diner with ElevenLabs Music through Everygen (viewmax.io), trimmed into a seamless loop.
+Check Everygen's terms for commercial use before release.

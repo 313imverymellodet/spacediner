@@ -1,6 +1,7 @@
 using UnityEngine;
 
-// Synthesized SFX + a lo-fi music loop. No audio files shipped.
+// Synthesized SFX and a lo-fi music loop, replaced by the recorded jingles, UI sounds and music in Resources/Audio
+// where those files exist.
 public class Sfx : MonoBehaviour
 {
     public static Sfx I;
@@ -9,7 +10,7 @@ public class Sfx : MonoBehaviour
 
     AudioSource[] voices; int next;
     AudioSource music;
-    AudioClip pop, drop, coin, register, unlock, whoosh, click, trash, deny, levelUp;
+    AudioClip pop, drop, coin, register, unlock, whoosh, click, trash, deny, levelUp, quest, launch, open, close, confirm;
     public bool Muted { get; private set; }
     System.Random rnd = new System.Random(3);
     float N() => (float)(rnd.NextDouble() * 2 - 1);
@@ -22,12 +23,18 @@ public class Sfx : MonoBehaviour
         voices = new AudioSource[8];
         for (int i = 0; i < voices.Length; i++) { voices[i] = gameObject.AddComponent<AudioSource>(); voices[i].playOnAwake = false; }
         music = gameObject.AddComponent<AudioSource>();
-        music.loop = true; music.volume = 0.32f; music.playOnAwake = false;
+        music.loop = true; music.volume = 0.6f; music.playOnAwake = false;
         Build();
-        music.clip = Music();
+        LoadRecorded();
+        // the recorded lounge-jazz loop (Resources/Audio/music_diner.wav); the synthesized lo-fi loop if it's missing
+        var track = Resources.Load<AudioClip>("Audio/music_diner");
+        music.clip = track != null ? track : Music();
+        music.mute = MusicOff;
     }
 
     public void SetMuted(bool m) { Muted = m; AudioListener.volume = m ? 0 : 1; }
+    public static bool MusicOff => PlayerPrefs.GetInt("music_off", 0) == 1;
+    public void SetMusic(bool on) { PlayerPrefs.SetInt("music_off", on ? 0 : 1); PlayerPrefs.Save(); music.mute = !on; }
     public void StartMusic() { if (!music.isPlaying) music.Play(); }
 
     void Play(AudioClip c, float vol, float pitch = 1f)
@@ -45,7 +52,12 @@ public class Sfx : MonoBehaviour
     public void Trash() => Play(trash, 0.4f, Random.Range(0.9f, 1.1f));
     public void Deny() => Play(deny, 0.35f);
     public void LevelUp() => Play(levelUp, 0.6f);
-    public void MusicBoost() => music.volume = 0.42f;
+    public void Quest() => Play(quest, 0.65f);
+    public void Launch() => Play(launch, 0.7f);
+    public void Open() => Play(open, 0.45f);
+    public void Close() => Play(close, 0.4f);
+    public void Confirm() => Play(confirm, 0.55f);
+    public void MusicBoost() => music.volume = 0.72f;
     public void Rush() { Play(unlock, 0.7f, 1.25f); music.pitch = 1.12f; }
     public void RushEnd() => music.pitch = 1f;
 
@@ -55,6 +67,20 @@ public class Sfx : MonoBehaviour
         if (Time.unscaledTime - lastCoin > 0.5f) coinStep = 0;
         lastCoin = Time.unscaledTime;
         Play(coin, 0.3f, 1f + Mathf.Min(coinStep++, 14) * 0.04f);
+    }
+
+    // Kenney's CC0 jingles and interface sounds (Resources/Audio) replace the synthesized ones where they exist.
+    void LoadRecorded()
+    {
+        AudioClip R(string n, AudioClip fallback) { var c = Resources.Load<AudioClip>("Audio/" + n); return c != null ? c : fallback; }
+        unlock = R("jingle_unlock", unlock);
+        levelUp = R("jingle_levelup", levelUp);
+        quest = R("jingle_quest", levelUp);
+        launch = R("jingle_launch", unlock);
+        click = R("ui_click", click);
+        open = R("ui_open", pop);
+        close = R("ui_close", drop);
+        confirm = R("ui_confirm", register);
     }
 
     static AudioClip Clip(string n, float[] d) { var c = AudioClip.Create(n, d.Length, 1, SR, false); c.SetData(d, 0); return c; }
