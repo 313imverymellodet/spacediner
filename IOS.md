@@ -16,6 +16,14 @@ The iOS app is the same game as the Android one: AdMob rewarded **2× cash** and
 3. In the app: **Monetization → In-App Purchases → +** → Non-Consumable, reference name `Remove Ads`, product ID `remove_ads`, price $2.99, display name "Remove Ads", description "Get every reward instantly, no videos.", plus a review screenshot of the pause screen's NO ADS button. Sign the **Paid Apps agreement** (Business) first, or the product never loads.
 4. **AdMob → Apps → Add app → iOS** (not listed yet) → name Space Diner → add a **Rewarded** ad unit. Paste the iOS app ID and unit ID into `IosAppId` / `IosRewardedId` in `unity/Assets/Scripts/Ads.cs` (they're Google's test IDs until then, and the export refuses them without `-testAds`).
 5. Your **Team ID** (developer.apple.com → Membership, 10 characters) goes in `MV_APPLE_TEAM` so the export turns on automatic signing. It isn't secret.
+6. **RevenueCat** (this game buys and restores through it, with the `appl_…` key in `Ads.cs`). Without these, NO ADS and RESTORE show a "Purchase failed" / "Restore failed" alert with RevenueCat's error code:
+   1. **App Store Connect → Users and Access → Integrations → In-App Purchase → +**: generate a key and download the `.p8` (once only; keep it out of git). Note its **Key ID** and the **Issuer ID** shown above the list.
+   2. **app.revenuecat.com → the project → Apps & providers → the App Store app**: bundle ID `com.mellovibes.spacediner`; upload the `.p8` under **In-app purchase key configuration** with the Key ID and Issuer ID, then save.
+   3. **Product catalog → Products → + New**: the App Store app, identifier `remove_ads`.
+   4. **Product catalog → Entitlements → + New**: identifier `no_ads`, then **Attach** `remove_ads`.
+   5. **Product catalog → Offerings → + New**: identifier `default` with one package holding `remove_ads` (the game doesn't read offerings, but RevenueCat's health check wants one).
+   6. Check from a terminal: every check in this report should say `passed`:
+      `curl -s -H "Authorization: Bearer <appl_ key>" https://api.revenuecat.com/v1/subscribers/health_check/health_report`
 
 ## 2. Export the Xcode project (Windows)
 
